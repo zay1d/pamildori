@@ -23,6 +23,8 @@ export interface Settings {
   weather: 'clear' | 'cloudy' | 'rain' | 'storm'
   /** Режим времени суток: фиксированный день/ночь или авто по часам. */
   timeMode: 'day' | 'night' | 'auto'
+  /** Дневная цель в помодоро (для статистики/прогресса). */
+  dailyGoal: number
 }
 
 export interface Task {
@@ -56,4 +58,5 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
   weather: 'clear',
   timeMode: 'auto',
+  dailyGoal: 8,
 }

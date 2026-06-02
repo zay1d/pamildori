@@ -7,13 +7,15 @@ import { Phone, StatusBar, TabBar } from './components/ui/pixelUi'
 import type { TabId } from './components/ui/pixelUi'
 import { TimerScreen } from './screens/TimerScreen'
 import { TasksScreen } from './screens/TasksScreen'
+import { SettingsScreen } from './screens/SettingsScreen'
 import { Placeholder } from './screens/Placeholder'
 import { useSettings } from './hooks/useSettings'
 import { useTasks } from './hooks/useTasks'
 import { useTheme } from './hooks/useTheme'
+import type { Settings } from './types'
 
 export default function App(): JSX.Element {
-  const [settings] = useSettings()
+  const [settings, setSettings] = useSettings()
   const tasks = useTasks()
   const [tab, setTab] = useState<TabId>('timer')
   const { theme } = useTheme(settings)
@@ -21,6 +23,10 @@ export default function App(): JSX.Element {
   // Завершённая фокус-сессия засчитывает помодоро активной задаче.
   const handleFocusComplete = (): void => {
     tasks.incrementActiveDone()
+  }
+
+  const updateSettings = (patch: Partial<Settings>): void => {
+    setSettings((prev) => ({ ...prev, ...patch }))
   }
 
   return (
@@ -32,7 +38,7 @@ export default function App(): JSX.Element {
       {tab === 'tasks' && <TasksScreen tasks={tasks} />}
       {tab === 'stats' && <Placeholder title="Stats" />}
       {tab === 'playlist' && <Placeholder title="Music" />}
-      {tab === 'settings' && <Placeholder title="Settings" />}
+      {tab === 'settings' && <SettingsScreen settings={settings} onChange={updateSettings} />}
       <TabBar active={tab} onNav={setTab} />
     </Phone>
   )
