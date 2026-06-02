@@ -9,7 +9,7 @@ import { Ctrl, ModeSeg, Preset, SealDots } from '../components/ui/pixelUi'
 import type { Mode } from '../components/ui/pixelUi'
 import { usePomodoro } from '../hooks/usePomodoro'
 import { useTheme } from '../hooks/useTheme'
-import { Settings } from '../types'
+import { Settings, Task } from '../types'
 import type { Costume, RobotState } from '../render/pixelArt'
 
 function TaskChip({ label }: { label: string }): JSX.Element {
@@ -77,13 +77,15 @@ const PRESETS = [5, 15, 30, 60]
 
 export function TimerScreen({
   settings,
-  task = 'Cicero · De Officiis, II',
+  activeTask = null,
+  onFocusComplete,
 }: {
   settings: Settings
-  task?: string
+  activeTask?: Task | null
+  onFocusComplete?: (minutes: number) => void
 }): JSX.Element {
   const { theme, timeofday } = useTheme(settings)
-  const timer = usePomodoro(settings)
+  const timer = usePomodoro(settings, onFocusComplete)
   const [customOpen, setCustomOpen] = useState(false)
   const [customValue, setCustomValue] = useState('')
 
@@ -113,7 +115,7 @@ export function TimerScreen({
   return (
     <>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '8px 16px 0', gap: 11, overflow: 'hidden' }}>
-        <TaskChip label={task} />
+        {activeTask ? <TaskChip label={activeTask.title} /> : <div style={{ height: 30 }} />}
         <TimerHero scene={scene} robot={robot} />
 
         {/* caption + cycle */}

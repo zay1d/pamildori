@@ -66,4 +66,5 @@ export const STORAGE_KEYS = {
   settings: 'settings',
   tasks: 'tasks',
   stats: 'stats',
+  activeTask: 'activeTask',
 } as const
