@@ -61,6 +61,15 @@ const PAL: Palette = {
   fire0: '#fff4b0', fire1: '#ffd24a', fire2: '#ff9a2a', fire3: '#ff5a1e', fire4: '#c0341a', ember: '#7a1e0c',
   // potion glows
   potT: '#56e6c4', potP: '#b27ce6', potG: '#9ae45e',
+  // shelving woodwork (warmer than furniture wood, reads as panelled cabinetry)
+  shelfXD: '#1a0f07', shelfD: '#2c1c10', shelf: '#43301c', shelfL: '#5e472a', shelfHi: '#825f38',
+  // book spines (muted dark-academia: oxblood, forest, navy, tan, plum, teal, ochre) + gilt
+  book: [
+    '#7a2026', '#5a1418', '#2f4a32', '#1f3a2a', '#23365e', '#1a2848',
+    '#8a6a34', '#6a4a22', '#5a3a52', '#3a2a48', '#2a5a58', '#6a3018',
+  ],
+  gilt: '#d8b45e', giltHi: '#f2dc9a',
+  lampGlow: 'rgba(255,176,72,', shelfShade: '#0c0805',
   // robot
   rXD: '#241a10', rD: '#3a2a18', r: '#54401f', rL: '#74592c', rHi: '#9a7a44',
   rFrameD: '#7c5a22', rFrame: '#b78f38', rFrameL: '#e6c574',
@@ -75,6 +84,13 @@ const DAY: Palette = {
   redXD: '#3a1014', redD: '#6a1c1f', red: '#9a2f2a', redL: '#bd4a3c', redHi: '#d97a52', redRim: '#eaa86c',
   woodXD: '#3a2614', woodD: '#54391f', wood: '#75522c', woodL: '#9a7440', woodHi: '#bd9456',
   land: '#3a5a44', landD: '#2a4636', horizonGlow: '#a9c79a',
+  // warmer, more lamplit cabinetry & spines for the day study
+  shelfXD: '#2c1a0c', shelfD: '#43301c', shelf: '#5e472a', shelfL: '#825f38', shelfHi: '#a87f4c',
+  book: [
+    '#9a3030', '#7a2026', '#43603e', '#2f4a32', '#324a76', '#23365e',
+    '#a8843e', '#8a6a34', '#6a4a62', '#4a3a58', '#3a6a66', '#8a4022',
+  ],
+  gilt: '#e6c87a', giltHi: '#fbeebb', shelfShade: '#160e06',
 }
 
 // Helpers for the heterogeneous palette object.
@@ -221,6 +237,17 @@ function buildStatic(W: number, H: number, state: SceneState): HTMLCanvasElement
   // mortar grid darkening
   ditherWash(c, 0, 0, W, H, '#0a0c14', 0.06)
 
+  // ----- flanking bookcases (dark-academia walls of colour-varied spines) -----
+  const cwGuess = Math.max(5, Math.round((g.ox1 - g.ox0) / 10))
+  const shelfTopY = Math.round(H * 0.06)
+  const shelfBotY = g.oyBot + Math.round(H * 0.02)
+  // left bookcase: from curtain edge to the left column
+  const lShelfX0 = showDrape ? Math.round(W * 0.15) : Math.round(W * 0.02)
+  drawBookcase(c, lShelfX0, shelfTopY, g.ox0 - cwGuess - 4, shelfBotY, C, 1, nightish)
+  // right bookcase: from the right column to the fireplace (or wall edge)
+  const rShelfX1 = showFire ? Math.round(W * 0.79) : Math.round(W * 0.98)
+  drawBookcase(c, g.ox1 + cwGuess + 4, shelfTopY, rShelfX1, shelfBotY, C, 2, nightish)
+
   // ----- sky inside arched opening -----
   c.save()
   openingPath(c, g)
@@ -257,27 +284,35 @@ function buildStatic(W: number, H: number, state: SceneState): HTMLCanvasElement
   const dk = ({ clear: 0, cloudy: 0.14, rain: 0.3, storm: 0.46 } as Record<string, number>)[weather] || 0
   if (dk) ditherWash(c, g.ox0 - 3, g.apexY, g.ox1 + 3, g.oyBot, '#070a14', dk + 0.2)
   if (dk) P(c, g.ox0 - 3, g.apexY, g.ox1 - g.ox0 + 6, g.oyBot - g.apexY, 'rgba(7,10,20,' + dk * 0.5 + ')')
-  // leaded panes
-  for (let gx = g.ox0 + (g.ox1 - g.ox0) / 3; gx < g.ox1 - 2; gx += (g.ox1 - g.ox0) / 3)
-    P(c, gx, g.oyTop - 2, 2, g.oyBot - g.oyTop + 2, 'rgba(10,12,20,0.85)')
-  for (let gy = g.oyTop + (g.oyBot - g.oyTop) / 3.2; gy < g.oyBot - 2; gy += (g.oyBot - g.oyTop) / 3.2)
-    P(c, g.ox0, gy, g.ox1 - g.ox0, 2, 'rgba(10,12,20,0.8)')
   c.restore()
+
+  // ----- leaded / mullioned glazing (gothic tracery) -----
+  // Drawn on its own clip so the bars hug the glass but the soft glass sheen
+  // can be laid over the panes too. Many narrow panes like the references.
+  drawGlazing(c, g, W, nightish)
 
   // ----- columns + arch frame (carved stone) -----
   drawColumns(c, g, C)
 
   // ----- moonbeam / cool light through glass onto foreground -----
   if (nightish) {
+    // volumetric shaft slanting down from the upper window into the room
     c.save()
     c.beginPath()
-    c.moveTo(g.ox0 + 6, g.oyBot)
-    c.lineTo(g.ox1 - 6, g.oyBot)
-    c.lineTo(g.ox1 + Math.round(W * 0.06), H)
-    c.lineTo(g.ox0 - Math.round(W * 0.12), H)
+    c.moveTo(g.ox0 + Math.round(W * 0.04), g.apexY + Math.round(H * 0.04))
+    c.lineTo(g.ocx + Math.round(W * 0.06), g.apexY + Math.round(H * 0.04))
+    c.lineTo(g.ox1 + Math.round(W * 0.04), H)
+    c.lineTo(g.ox0 - Math.round(W * 0.14), H)
     c.closePath()
     c.clip()
-    ditherWash(c, 0, g.oyBot, W, H, '#9fb6e0', 0.16)
+    const beam = c.createLinearGradient(0, g.apexY, 0, H)
+    beam.addColorStop(0, 'rgba(165,190,235,0.22)')
+    beam.addColorStop(0.55, 'rgba(150,178,228,0.12)')
+    beam.addColorStop(1, 'rgba(140,170,225,0.04)')
+    c.fillStyle = beam
+    c.fillRect(0, g.apexY, W, H - g.apexY)
+    // dithered cool pool on the floor where the beam lands
+    ditherWash(c, 0, g.oyBot, W, H, '#9fb6e0', 0.14)
     c.restore()
   }
 
@@ -318,6 +353,85 @@ function buildStatic(W: number, H: number, state: SceneState): HTMLCanvasElement
   return off
 }
 
+// A panelled bookcase filling [x0,x1] x [y0,y1] with rows of colour-varied
+// spines, gilt bands, little leaning books and a warm reading-lamp glow.
+function drawBookcase(
+  c: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number,
+  C: Palette, seed0: number, nightish: boolean,
+): void {
+  const w = x1 - x0, h = y1 - y0
+  if (w < 8 || h < 8) return
+  const spines = A(C, 'book')
+  // carcass: dark cabinet back + side panels
+  P(c, x0, y0, w, h, S(C, 'shelfD'))
+  P(c, x0, y0, 3, h, S(C, 'shelfL')) // left stile (lit)
+  P(c, x1 - 3, y0, 3, h, S(C, 'shelfXD')) // right stile (shade)
+  P(c, x0, y0, w, 3, S(C, 'shelfL')) // top rail
+  P(c, x0, y1 - 3, w, 3, S(C, 'shelfXD')) // base rail
+
+  const rows = Math.max(3, Math.round(h / Math.max(14, h / 6)))
+  const rh = Math.floor((h - 6) / rows)
+  const ix0 = x0 + 4, ix1 = x1 - 4
+  for (let r = 0; r < rows; r++) {
+    const ry = y0 + 3 + r * rh
+    const shelfTop = ry + rh - 3
+    // recessed shelf interior shadow
+    P(c, ix0, ry, ix1 - ix0, rh - 3, S(C, 'shelfShade'))
+    // books standing along the row
+    let bx = ix0 + 1
+    let i = seed0 * 31 + r * 17
+    while (bx < ix1 - 2) {
+      i++
+      const r1 = rnd(i), r2 = rnd(i + 7), r3 = rnd(i + 13)
+      const bw = 2 + Math.floor(r1 * 3) // 2..4 px wide spine
+      if (bx + bw > ix1 - 1) break
+      const bookH = Math.round((rh - 4) * (0.7 + r2 * 0.28))
+      const by = shelfTop - bookH
+      const col = spines[Math.floor(r3 * spines.length) % spines.length]
+      // gap / lean: occasionally tip a book or leave a slot
+      if (r2 > 0.93) { bx += bw + 1; continue }
+      P(c, bx, by, bw, bookH, col)
+      // spine highlight (left) + shade (right)
+      P(c, bx, by, 1, bookH, 'rgba(255,255,255,0.14)')
+      P(c, bx + bw - 1, by, 1, bookH, 'rgba(0,0,0,0.32)')
+      // gilt title band on taller spines
+      if (bw >= 3 && rnd(i + 21) > 0.55) {
+        P(c, bx, by + Math.round(bookH * 0.3), bw, 1, S(C, 'gilt'))
+        if (rnd(i + 29) > 0.6) P(c, bx, by + Math.round(bookH * 0.6), bw, 1, S(C, 'gilt'))
+      }
+      // top cap highlight
+      P(c, bx, by, bw, 1, 'rgba(255,236,200,0.16)')
+      bx += bw + 1
+    }
+    // a couple of small horizontally-stacked books / leaning volume per shelf
+    if (rnd(i + 41) > 0.4) {
+      const sw = 5 + Math.floor(rnd(i + 43) * 4)
+      const sx = ix1 - sw - 1
+      const col = spines[Math.floor(rnd(i + 47) * spines.length) % spines.length]
+      P(c, sx, shelfTop - 3, sw, 3, col)
+      P(c, sx, shelfTop - 5, sw - 1, 2, spines[Math.floor(rnd(i + 51) * spines.length) % spines.length])
+      P(c, sx, shelfTop - 3, sw, 1, S(C, 'gilt'))
+    }
+    // shelf board with front lip (depth)
+    P(c, ix0 - 1, shelfTop, ix1 - ix0 + 2, 2, S(C, 'shelf'))
+    P(c, ix0 - 1, shelfTop, ix1 - ix0 + 2, 1, S(C, 'shelfHi'))
+    P(c, ix0 - 1, shelfTop + 2, ix1 - ix0 + 2, 1, S(C, 'shelfXD'))
+  }
+  // a small brass reading lamp glow on one shelf (warm pool) — adds cosiness
+  const lampRow = 1 + (seed0 & 1)
+  const ly = y0 + 3 + lampRow * rh + Math.round(rh * 0.5)
+  const lx = seed0 % 2 ? x1 - Math.round(w * 0.3) : x0 + Math.round(w * 0.3)
+  // little lamp base
+  P(c, lx - 1, ly - 2, 4, 4, S(C, 'brassD'))
+  P(c, lx, ly - 4, 2, 3, S(C, 'brass'))
+  const lampA = nightish ? 0.5 : 0.4
+  const lg = c.createRadialGradient(lx + 1, ly - 2, 1, lx + 1, ly - 2, Math.round(w * 0.7))
+  lg.addColorStop(0, S(C, 'lampGlow') + lampA + ')')
+  lg.addColorStop(1, S(C, 'lampGlow') + '0)')
+  c.fillStyle = lg
+  c.fillRect(x0 - 6, y0 - 6, w + 12, h + 12)
+}
+
 function drawCastleStatic(c: CanvasRenderingContext2D, cx: number, baseY: number, C: Palette): void {
   const tw = (x: number, w: number, h: number): void => {
     P(c, x, baseY - h, w, h, S(C, 'castle'))
@@ -337,34 +451,115 @@ function drawCastleStatic(c: CanvasRenderingContext2D, cx: number, baseY: number
   P(c, cx - 14, baseY - 6, 30, 6, S(C, 'castle'))
 }
 
+// Leaded glazing: a lattice of came bars dividing the arched opening into many
+// narrow panes, plus a diagonal glass sheen and a hint of arched tracery near
+// the apex. Each bar is a dark lead came with a thin lit edge so it reads 3D.
+function drawGlazing(c: CanvasRenderingContext2D, g: Geom, W: number, nightish: boolean): void {
+  c.save()
+  openingPath(c, g)
+  c.clip()
+  const came = 'rgba(8,10,18,0.88)', cameHi = 'rgba(150,168,205,0.30)'
+  const innerH = g.oyBot - g.oyTop
+  // vertical bars — 5 lights across (4 interior mullions)
+  const lights = 5
+  for (let i = 1; i < lights; i++) {
+    const gx = Math.round(g.ox0 + ((g.ox1 - g.ox0) * i) / lights)
+    P(c, gx - 1, g.apexY - 2, 2, g.oyBot - g.apexY + 2, came)
+    P(c, gx - 1, g.apexY - 2, 1, g.oyBot - g.apexY + 2, cameHi)
+  }
+  // horizontal transoms — evenly spaced rows down the window
+  const rows = 7
+  for (let r = 1; r < rows; r++) {
+    const gy = Math.round(g.oyTop + (innerH * r) / rows)
+    P(c, g.ox0 - 2, gy - 1, g.ox1 - g.ox0 + 4, 2, came)
+    P(c, g.ox0 - 2, gy - 1, g.ox1 - g.ox0 + 4, 1, cameHi)
+  }
+  // outer frame came hugging the stone reveal
+  P(c, g.ox0, g.oyTop - 2, 2, innerH + 2, came)
+  P(c, g.ox1 - 2, g.oyTop - 2, 2, innerH + 2, came)
+  P(c, g.ox0, g.oyBot - 2, g.ox1 - g.ox0, 2, came)
+  // arched tracery: ribs following the curve, meeting at a small rose
+  for (let k = -1; k <= 1; k++) {
+    for (let a = Math.PI; a <= 2 * Math.PI + 0.01; a += 0.05) {
+      const rr = g.ory - 3 - k * Math.round(g.ory * 0.34)
+      const rx = g.orx - 3 - k * Math.round(g.orx * 0.18)
+      if (rr <= 1 || rx <= 1) continue
+      const x = g.ocx + Math.cos(a) * rx, y = g.oyTop + Math.sin(a) * rr
+      P(c, x, y, 2, 2, came)
+      P(c, x, y, 1, 1, cameHi)
+    }
+  }
+  // little rose/quatrefoil at the apex
+  const ax = g.ocx, ay = g.apexY + Math.round(g.ory * 0.42)
+  for (let yy = -3; yy <= 3; yy++)
+    for (let xx = -3; xx <= 3; xx++)
+      if (xx * xx + yy * yy <= 9 && xx * xx + yy * yy >= 4) P(c, ax + xx, ay + yy, 1, 1, came)
+  P(c, ax - 1, ay - 1, 2, 2, cameHi)
+  // diagonal glass sheen — two soft parallel bands of cool reflection
+  for (let b = 0; b < 2; b++) {
+    const ox = b * Math.round(W * 0.07)
+    for (let y = g.apexY; y < g.oyBot; y += 1) {
+      const x = Math.round(g.ox0 + (y - g.apexY) * 0.55) + Math.round(W * 0.02) + ox
+      if (x > g.ox0 && x < g.ox1 && (y & 1) === 0) {
+        P(c, x, y, 2, 1, nightish ? 'rgba(150,175,220,0.10)' : 'rgba(225,238,250,0.14)')
+      }
+    }
+  }
+  c.restore()
+}
+
 function drawColumns(c: CanvasRenderingContext2D, g: Geom, C: Palette): void {
-  const cw = Math.max(5, Math.round((g.ox1 - g.ox0) / 10))
+  const cw = Math.max(6, Math.round((g.ox1 - g.ox0) / 9))
   ;[g.ox0 - cw, g.ox1].forEach((x, side) => {
-    // shaft with fluting
-    for (let y = g.oyTop - 2; y < g.oyBot + 4; y += 1) {
-      P(c, x, y, cw, 1, y % 6 < 1 ? S(C, 'stoneXD') : S(C, 'stone'))
+    // shaft built from coursed ashlar blocks (banded), not flat fluting
+    const blkH = 7
+    for (let y = g.oyTop - 2; y < g.oyBot + 4; y += blkH) {
+      const seed = (x * 7 + y * 13) | 0
+      const tone = [S(C, 'stoneD'), S(C, 'stone'), S(C, 'stone'), S(C, 'stoneL')][Math.floor(rnd(seed) * 4)]
+      P(c, x, y, cw, blkH - 1, tone)
+      P(c, x, y, cw, 1, S(C, 'stoneL')) // course top sheen
+      P(c, x, y + blkH - 2, cw, 1, S(C, 'stoneXD')) // course shade
+      if (rnd(seed + 5) > 0.8) P(c, x + 2, y + 2, 1, blkH - 4, S(C, 'stoneXD')) // hairline crack
     }
     P(c, x, g.oyTop - 2, 2, g.oyBot - g.oyTop + 6, S(C, 'stoneL')) // lit edge
     P(c, x + cw - 2, g.oyTop - 2, 2, g.oyBot - g.oyTop + 6, S(C, 'stoneXD')) // shade edge
     P(c, x + (side ? 0 : cw - 2), g.oyTop - 2, 2, g.oyBot - g.oyTop + 6, S(C, 'stoneHi')) // inner highlight toward glass
-    // capital
-    P(c, x - 2, g.oyTop - 6, cw + 4, 6, S(C, 'stoneL'))
-    P(c, x - 2, g.oyTop - 6, cw + 4, 2, S(C, 'stoneHi'))
-    // base
-    P(c, x - 3, g.oyBot, cw + 6, 6, S(C, 'stoneL'))
-    P(c, x - 3, g.oyBot + 5, cw + 6, 2, S(C, 'stoneXD'))
+    // moulded capital (two steps)
+    P(c, x - 3, g.oyTop - 8, cw + 6, 8, S(C, 'stoneL'))
+    P(c, x - 3, g.oyTop - 8, cw + 6, 2, S(C, 'stoneHi'))
+    P(c, x - 1, g.oyTop - 4, cw + 2, 2, S(C, 'stone'))
+    P(c, x - 3, g.oyTop - 1, cw + 6, 1, S(C, 'stoneXD'))
+    // moulded base (two steps)
+    P(c, x - 2, g.oyBot, cw + 4, 4, S(C, 'stoneL'))
+    P(c, x - 4, g.oyBot + 3, cw + 8, 4, S(C, 'stone'))
+    P(c, x - 4, g.oyBot + 3, cw + 8, 1, S(C, 'stoneHi'))
+    P(c, x - 4, g.oyBot + 6, cw + 8, 2, S(C, 'stoneXD'))
   })
-  // voussoir arch
-  for (let a = Math.PI; a <= 2 * Math.PI + 0.01; a += 0.1) {
-    const x = g.ocx + Math.cos(a) * (g.orx + 2), y = g.oyTop + Math.sin(a) * (g.ory + 2)
-    P(c, x - 3, y - 3, 6, 6, S(C, 'stone'))
-    P(c, x - 3, y - 3, 6, 2, S(C, 'stoneL'))
-    P(c, x + 1, y - 3, 2, 6, S(C, 'stoneXD'))
+  // voussoir arch — wedge blocks radiating, alternating tone, with joint lines
+  let vi = 0
+  for (let a = Math.PI; a <= 2 * Math.PI + 0.01; a += 0.07) {
+    const cosA = Math.cos(a), sinA = Math.sin(a)
+    // inner & outer radius of the wedge ring (kept tight so it reads as a band)
+    const r0x = g.orx + 1, r0y = g.ory + 1, r1x = g.orx + 6, r1y = g.ory + 6
+    const tone = vi % 2 ? S(C, 'stone') : S(C, 'stoneL')
+    for (let s = 0; s <= 1.001; s += 0.2) {
+      const rx = r0x + (r1x - r0x) * s, ry = r0y + (r1y - r0y) * s
+      const x = g.ocx + cosA * rx, y = g.oyTop + sinA * ry
+      P(c, x - 1, y - 1, 2, 2, tone)
+      // light the upper-left of each wedge, shade the lower-right
+      if (cosA < -0.2 && s < 0.6) P(c, x - 1, y - 1, 1, 1, S(C, 'stoneHi'))
+      else if (cosA > 0.2 && s > 0.6) P(c, x, y, 1, 1, S(C, 'stoneXD'))
+    }
+    // dark joint line at the inner edge between wedges
+    if (vi % 2) P(c, g.ocx + cosA * r0x, g.oyTop + sinA * r0y, 1, 2, S(C, 'stoneXD'))
+    vi++
   }
-  // keystone
-  P(c, g.ocx - 4, g.apexY - 7, 8, 9, S(C, 'stoneL'))
-  P(c, g.ocx - 4, g.apexY - 7, 8, 2, S(C, 'stoneHi'))
-  P(c, g.ocx - 2, g.apexY - 3, 4, 4, S(C, 'stoneEdge'))
+  // chunky carved keystone at the apex
+  P(c, g.ocx - 5, g.apexY - 11, 10, 13, S(C, 'stone'))
+  P(c, g.ocx - 5, g.apexY - 11, 10, 2, S(C, 'stoneHi'))
+  P(c, g.ocx - 4, g.apexY - 9, 8, 9, S(C, 'stoneL'))
+  P(c, g.ocx - 2, g.apexY - 6, 4, 6, S(C, 'stoneEdge'))
+  P(c, g.ocx + 3, g.apexY - 11, 2, 13, S(C, 'stoneXD')) // right shade
 }
 
 function drawCurtain(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, C: Palette, H: number): void {
@@ -401,6 +596,17 @@ function drawDrapedSill(c: CanvasRenderingContext2D, g: Geom, C: Palette, W: num
   P(c, g.ox0 - Math.round(W * 0.06), y0 - 3, g.ox1 - g.ox0 + Math.round(W * 0.12), 6, S(C, 'redL'))
   P(c, g.ox0 - Math.round(W * 0.06), y0 - 3, g.ox1 - g.ox0 + Math.round(W * 0.12), 2, S(C, 'redRim'))
   ditherWash(c, 0, y0, W, H, '#1a0608', 0.18)
+
+  // carved stone window sill with depth, sitting on the reveal under the glass
+  const sx0 = g.ox0 - Math.round(W * 0.04), sx1 = g.ox1 + Math.round(W * 0.04)
+  const syTop = g.oyBot - 2, slab = Math.max(5, Math.round(H * 0.035))
+  P(c, sx0, syTop, sx1 - sx0, slab, S(C, 'stone')) // slab face
+  P(c, sx0, syTop, sx1 - sx0, 2, S(C, 'stoneHi')) // lit top nosing
+  P(c, sx0, syTop + 2, sx1 - sx0, 1, S(C, 'stoneL'))
+  P(c, sx0, syTop + slab - 2, sx1 - sx0, 2, S(C, 'stoneXD')) // underside shadow
+  // little overhang corbels at the ends
+  P(c, sx0 - 2, syTop + 1, 3, slab - 1, S(C, 'stoneD'))
+  P(c, sx1 - 1, syTop + 1, 3, slab - 1, S(C, 'stoneD'))
 }
 
 function drawHearthStatic(c: CanvasRenderingContext2D, x: number, baseY: number, W: number, H: number, C: Palette): void {
@@ -426,30 +632,56 @@ function drawHearthStatic(c: CanvasRenderingContext2D, x: number, baseY: number,
 
 function drawClutter(c: CanvasRenderingContext2D, g: Geom, C: Palette, W: number, H: number): void {
   const sy = g.oyBot + Math.round(H * 0.015)
-  // stack of books (left of robot)
+  // ----- left: stacked books with a brass candelabra (warm reading nook) -----
   const bxx = g.ox0 - Math.round(W * 0.1), byy = sy
-  ;[S(C, 'red'), S(C, 'brassD'), S(C, 'knit'), S(C, 'woodL')].forEach((col, i) => {
+  // a slightly tilted stack of colour-varied volumes
+  const spines = A(C, 'book')
+  for (let i = 0; i < 4; i++) {
     const w = Math.round(W * 0.085) - i * 2, hh = Math.round(H * 0.022)
-    P(c, bxx + i, byy - (i + 1) * hh, w, hh, col)
-    P(c, bxx + i, byy - (i + 1) * hh, w, 1, 'rgba(255,255,255,0.18)')
-    P(c, bxx + i + w - 2, byy - (i + 1) * hh, 2, hh, 'rgba(0,0,0,0.3)') // gilt page edge
-    P(c, bxx + i + 1, byy - (i + 1) * hh + 1, 1, hh - 2, S(C, 'brassL'))
-  })
-  // candle on the books
+    const col = spines[(i * 5 + 2) % spines.length]
+    const jx = i % 2 ? 1 : 0 // alternating overhang for a hand-stacked look
+    P(c, bxx + i + jx, byy - (i + 1) * hh, w, hh, col)
+    P(c, bxx + i + jx, byy - (i + 1) * hh, w, 1, 'rgba(255,236,200,0.20)') // top cap
+    P(c, bxx + i + jx + w - 2, byy - (i + 1) * hh, 2, hh, S(C, 'parch')) // page block edge
+    P(c, bxx + i + jx, byy - (i + 1) * hh + Math.round(hh / 2), 1, 1, S(C, 'gilt')) // spine band
+  }
+  // open book lying on top (parchment pages, a dark-academia touch)
+  const obx = bxx + 1, oby = byy - 5 * Math.round(H * 0.022)
+  P(c, obx, oby, Math.round(W * 0.09), 4, S(C, 'woodD'))
+  P(c, obx + 1, oby - 1, Math.round(W * 0.04), 4, S(C, 'parch'))
+  P(c, obx + 2 + Math.round(W * 0.04), oby - 1, Math.round(W * 0.04), 4, S(C, 'parch'))
+  P(c, obx + 1 + Math.round(W * 0.04), oby - 1, 1, 4, S(C, 'woodXD')) // spine gutter
+  // brass candelabra: footed stem + drip cup, candle on top
   const cax = bxx + Math.round(W * 0.03)
-  P(c, cax, byy - Math.round(H * 0.11), 4, Math.round(H * 0.055), S(C, 'parch'))
-  P(c, cax, byy - Math.round(H * 0.11), 1, Math.round(H * 0.055), '#fff7e0')
-  // potion bottle (alchemist nod, right of robot)
+  const stemBot = oby - 1
+  P(c, cax - 1, stemBot - 1, 6, 2, S(C, 'brassD')) // foot
+  P(c, cax + 1, stemBot - Math.round(H * 0.03), 2, Math.round(H * 0.03), S(C, 'brass')) // stem
+  P(c, cax + 1, stemBot - Math.round(H * 0.03), 1, Math.round(H * 0.03), S(C, 'brassHi'))
+  P(c, cax - 1, stemBot - Math.round(H * 0.03), 6, 2, S(C, 'brassL')) // drip cup
+  const candTop = stemBot - Math.round(H * 0.03) - Math.round(H * 0.05)
+  P(c, cax, candTop, 4, Math.round(H * 0.05), S(C, 'parch')) // candle
+  P(c, cax, candTop, 1, Math.round(H * 0.05), '#fff7e0')
+  P(c, cax + 3, candTop, 1, Math.round(H * 0.05), S(C, 'woodD'))
+  P(c, cax + 1, candTop, 2, 1, '#fffbe8') // melted top
+  // ----- right: alchemist clutter (potion + inkwell + quill + small stack) -----
   const px = g.ox1 + Math.round(W * 0.05)
-  P(c, px, sy - Math.round(H * 0.07), 7, Math.round(H * 0.065), 'rgba(40,60,55,0.6)')
+  // potion bottle with rounded shoulder + liquid + highlight
+  P(c, px, sy - Math.round(H * 0.07), 7, Math.round(H * 0.065), 'rgba(40,60,55,0.55)')
   P(c, px + 1, sy - Math.round(H * 0.05), 5, Math.round(H * 0.04), S(C, 'potT'))
+  P(c, px + 1, sy - Math.round(H * 0.05), 5, 1, '#dffaf0') // liquid meniscus
   P(c, px + 2, sy - Math.round(H * 0.03), 2, Math.round(H * 0.02), '#bff7e8')
+  P(c, px + 1, sy - Math.round(H * 0.065), 1, Math.round(H * 0.05), 'rgba(220,255,245,0.4)') // glass glint
   P(c, px + 2, sy - Math.round(H * 0.085), 3, 3, S(C, 'woodD')) // cork
   ditherWash(c, px - 3, sy - Math.round(H * 0.09), px + 10, sy, S(C, 'potT'), 0.12) // glow
-  // quill + inkwell
-  P(c, px + Math.round(W * 0.04), sy - 6, 5, 6, '#10100c') // inkwell
-  P(c, px + Math.round(W * 0.045), sy - 18, 1, 13, S(C, 'parch')) // quill shaft (lean)
-  P(c, px + Math.round(W * 0.045) - 2, sy - 20, 4, 4, '#d8c9a0')
+  // a small leaning book beside it
+  P(c, px + 8, sy - Math.round(H * 0.05), 3, Math.round(H * 0.05), spines[1 % spines.length])
+  P(c, px + 8, sy - Math.round(H * 0.05), 1, Math.round(H * 0.05), 'rgba(255,236,200,0.2)')
+  // inkwell + quill (leaning)
+  P(c, px + Math.round(W * 0.04), sy - 6, 5, 6, '#10100c')
+  P(c, px + Math.round(W * 0.04), sy - 6, 5, 1, S(C, 'brassD')) // brass rim
+  P(c, px + Math.round(W * 0.045), sy - 18, 1, 13, S(C, 'parch')) // quill shaft
+  P(c, px + Math.round(W * 0.045) - 2, sy - 20, 4, 4, '#d8c9a0') // feather
+  P(c, px + Math.round(W * 0.045) - 2, sy - 18, 3, 1, '#b8a878') // feather barb
 }
 
 // ---------------- DYNAMIC + COMPOSITE ----------------
@@ -502,32 +734,91 @@ export function drawScene(ctx: CanvasRenderingContext2D, W: number, H: number, s
       }
     }
   }
-  // drifting clouds
+  // drifting clouds with volume (body + shaded base + lit crown)
   if (weather !== 'clear') {
     const dark = weather === 'storm'
-    for (let i = 0; i < 3; i++) {
-      const drift = ((t * 5 + i * 40) % (g.ox1 - g.ox0 + 50)) - 25
-      const cx = g.ox0 + drift, cy = g.apexY + 8 + (i % 2) * Math.round(H * 0.06)
-      const col = dark ? '#23232e' : 'rgba(120,120,135,0.7)', colL = dark ? '#33333e' : 'rgba(150,150,165,0.7)'
-      P(ctx, cx, cy, 26, 7, col)
-      P(ctx, cx + 6, cy - 4, 16, 5, col)
-      P(ctx, cx + 3, cy, 20, 2, colL)
+    const colD = dark ? '#1a1a24' : 'rgba(98,100,116,0.7)'
+    const col = dark ? '#26262f' : 'rgba(126,128,144,0.72)'
+    const colL = dark ? '#3a3a46' : 'rgba(162,164,180,0.75)'
+    const span = g.ox1 - g.ox0 + 70
+    const puffs = weather === 'cloudy' ? 4 : 3
+    for (let i = 0; i < puffs; i++) {
+      const drift = ((t * 4 + i * 55) % span) - 35
+      const cx = g.ox0 + drift, cy = g.apexY + 6 + (i % 2) * Math.round(H * 0.05)
+      // rounded billow built from stacked lozenges
+      P(ctx, cx, cy + 2, 30, 6, col)
+      P(ctx, cx + 5, cy - 2, 20, 7, col)
+      P(ctx, cx + 12, cy - 5, 12, 6, col)
+      P(ctx, cx + 2, cy + 6, 26, 2, colD) // shaded underside
+      P(ctx, cx + 6, cy - 4, 14, 2, colL) // lit crown
+      P(ctx, cx + 13, cy - 6, 8, 1, colL)
     }
   }
-  // rain
+  // rain — two layers: faint distant drizzle + brighter near streaks
   if (weather === 'rain' || weather === 'storm') {
-    for (let i = 0; i < 46; i++) {
+    const heavy = weather === 'storm'
+    const far = heavy ? 40 : 30, near = heavy ? 34 : 24
+    for (let i = 0; i < far; i++) {
       const baseX = g.ox0 + rnd(i) * (g.ox1 - g.ox0)
-      const sp = 70 + rnd(i + 5) * 50
+      const sp = 90 + rnd(i + 5) * 60
       const y = g.apexY + ((t * sp + rnd(i + 9) * 260) % (g.oyBot - g.apexY))
-      P(ctx, baseX + (y - g.apexY) * 0.16, y, 1, 5, 'rgba(200,214,235,0.5)')
+      P(ctx, baseX + (y - g.apexY) * 0.14, y, 1, 4, 'rgba(190,206,232,0.32)')
     }
-  }
-  if (weather === 'storm') {
-    const f = t % 5
-    if (f > 4.7 && f < 4.86) P(ctx, g.ox0 - 3, g.apexY, g.ox1 - g.ox0 + 6, g.oyBot - g.apexY, 'rgba(235,235,255,0.45)')
+    for (let i = 0; i < near; i++) {
+      const baseX = g.ox0 + rnd(i + 200) * (g.ox1 - g.ox0)
+      const sp = 130 + rnd(i + 205) * 70
+      const y = g.apexY + ((t * sp + rnd(i + 209) * 300) % (g.oyBot - g.apexY))
+      P(ctx, baseX + (y - g.apexY) * 0.18, y, 1, heavy ? 7 : 6, 'rgba(214,226,245,0.55)')
+    }
   }
   ctx.restore()
+
+  // rain splashes ticking on the stone sill (outside the glass clip)
+  if (weather === 'rain' || weather === 'storm') {
+    const sillY = g.oyBot - 1
+    for (let i = 0; i < (weather === 'storm' ? 10 : 7); i++) {
+      const ph = (t * 1.6 + rnd(i + 30) * 3) % 1
+      if (ph < 0.45) {
+        const splx = g.ox0 + 4 + rnd(i + 31) * (g.ox1 - g.ox0 - 8)
+        const r = Math.round(ph * 5)
+        P(ctx, splx - r, sillY, 1, 1, 'rgba(214,226,245,0.5)')
+        P(ctx, splx + r, sillY, 1, 1, 'rgba(214,226,245,0.5)')
+        if (ph < 0.2) P(ctx, splx, sillY - 1, 1, 1, 'rgba(230,238,250,0.6)')
+      }
+    }
+  }
+
+  // storm lightning — periodic flash illuminating the whole scene
+  if (weather === 'storm') {
+    const f = t % 6
+    let flash = 0
+    if (f > 5.4 && f < 5.52) flash = 0.5 // main strike
+    else if (f > 5.56 && f < 5.62) flash = 0.32 // afterflash
+    if (flash > 0) {
+      ctx.fillStyle = 'rgba(228,234,255,' + flash + ')'
+      ctx.fillRect(0, 0, W, H)
+      // jagged bolt inside the window
+      ctx.save()
+      openingPath(ctx, g)
+      ctx.clip()
+      let lx = g.ocx + Math.round((rnd(Math.floor(t * 10)) - 0.5) * (g.ox1 - g.ox0) * 0.4)
+      let ly = g.apexY
+      for (let s = 0; s < 9; s++) {
+        const nx = lx + Math.round((rnd(s + Math.floor(t * 10)) - 0.5) * 9)
+        const ny = ly + Math.round((g.horizon - g.apexY) / 9)
+        // thin diagonal segment: step the bolt one px at a time so it stays narrow
+        const steps = Math.max(Math.abs(nx - lx), ny - ly)
+        for (let k = 0; k <= steps; k++) {
+          const px = lx + Math.round(((nx - lx) * k) / steps)
+          const py = ly + Math.round(((ny - ly) * k) / steps)
+          P(ctx, px, py, 2, 2, '#f4f6ff')
+        }
+        lx = nx
+        ly = ny
+      }
+      ctx.restore()
+    }
+  }
 
   // fireplace flames (dynamic) + flicker glow
   if (state.fireplace !== false) {
@@ -556,15 +847,21 @@ export function drawScene(ctx: CanvasRenderingContext2D, W: number, H: number, s
     ctx.fillRect(0, 0, W, H)
   }
 
-  // candle flame + halo (left clutter)
+  // candle flame + halo (left candelabra) — teardrop flame with hot core
   {
-    const cax = g.ox0 - Math.round(W * 0.07), cay = g.oyBot + Math.round(H * 0.015) - Math.round(H * 0.11)
-    const fl = Math.sin(t * 9) * 0.6
-    P(ctx, cax + 1, cay - 4 + fl, 2, 5, S(C, 'fire2'))
-    P(ctx, cax + 1, cay - 5 + fl, 2, 2, S(C, 'fire0'))
-    const gr = ctx.createRadialGradient(cax + 2, cay - 2, 1, cax + 2, cay - 2, Math.round(W * 0.13))
-    gr.addColorStop(0, 'rgba(255,180,80,0.34)')
-    gr.addColorStop(1, 'rgba(255,180,80,0)')
+    const cax = g.ox0 - Math.round(W * 0.07)
+    const cay = g.oyBot + Math.round(H * 0.015) - Math.round(H * 0.03) - Math.round(H * 0.05)
+    const fl = Math.sin(t * 9) * 0.7
+    const sway = Math.round(Math.sin(t * 5) * 0.6)
+    P(ctx, cax + 1 + sway, cay - 1 + fl, 2, 3, S(C, 'fire3')) // outer base
+    P(ctx, cax + 1 + sway, cay - 4 + fl, 2, 4, S(C, 'fire2')) // body
+    P(ctx, cax + 1 + sway, cay - 6 + fl, 2, 2, S(C, 'fire1')) // upper
+    P(ctx, cax + 1 + sway, cay - 2 + fl, 1, 2, S(C, 'fire0')) // hot core
+    P(ctx, cax + 1 + sway, cay + fl, 2, 1, '#6a86c8') // cool wick base
+    const gr = ctx.createRadialGradient(cax + 2, cay - 2, 1, cax + 2, cay - 2, Math.round(W * 0.15))
+    gr.addColorStop(0, 'rgba(255,186,92,0.40)')
+    gr.addColorStop(0.5, 'rgba(255,160,70,0.16)')
+    gr.addColorStop(1, 'rgba(255,160,70,0)')
     ctx.fillStyle = gr
     ctx.fillRect(0, 0, W, H)
   }
@@ -624,16 +921,21 @@ export function drawRobot(ctx: CanvasRenderingContext2D, W: number, H: number, s
   P(ctx, bx - 5, top + 30, 5, 2, S(C, 'rFrameL'))
   P(ctx, bx + bw, top + 30, 5, 2, S(C, 'rFrameL'))
 
-  // antenna
+  // antenna with a softly pulsing glowing bulb
   if (!cos.includes('nightcap')) {
     P(ctx, cx - 1, top - 8, 2, 9, S(C, 'rFrame'))
-    P(ctx, cx - 2, top - 11, 4, 4, S(C, 'redL'))
-    P(ctx, cx - 2, top - 11, 2, 2, S(C, 'redRim'))
-    const gl = ctx.createRadialGradient(cx, top - 9, 1, cx, top - 9, 8)
-    gl.addColorStop(0, 'rgba(220,80,60,0.4)')
-    gl.addColorStop(1, 'rgba(220,80,60,0)')
+    P(ctx, cx - 1, top - 8, 1, 9, S(C, 'rFrameL')) // lit side of the stalk
+    // glass bulb
+    P(ctx, cx - 2, top - 12, 4, 5, S(C, 'redL'))
+    P(ctx, cx - 2, top - 12, 4, 1, S(C, 'redRim'))
+    P(ctx, cx - 1, top - 11, 2, 2, S(C, 'redRim')) // hot filament
+    P(ctx, cx - 2, top - 11, 1, 1, '#fff') // glass glint
+    const pulse = 0.32 + (Math.sin(t * 3) + 1) * 0.16
+    const gl = ctx.createRadialGradient(cx, top - 10, 1, cx, top - 10, 9)
+    gl.addColorStop(0, 'rgba(232,120,80,' + pulse + ')')
+    gl.addColorStop(1, 'rgba(232,120,80,0)')
     ctx.fillStyle = gl
-    ctx.fillRect(cx - 9, top - 18, 18, 16)
+    ctx.fillRect(cx - 10, top - 20, 20, 18)
   }
 
   // ---- body chassis with shading ----
@@ -689,38 +991,66 @@ export function drawRobot(ctx: CanvasRenderingContext2D, W: number, H: number, s
   ctx.fillRect(xb - 4, yb - 4, wb + 8, hb + 8)
   drawDigits(ctx, Math.round(cx - tw / 2), yb + 4, mmss, cell, S(C, 'amber'))
 
-  // ---- NIGHTCAP ----
+  // ---- NIGHTCAP ---- knit ribbed brim + tapering cap with purl texture + pom-pom
   if (cos.includes('nightcap')) {
+    // folded ribbed brim
     P(ctx, bx, top - 4, bw, 7, S(C, 'redL'))
     P(ctx, bx, top - 4, bw, 2, S(C, 'redRim'))
     P(ctx, bx, top + 1, bw, 2, S(C, 'redD'))
-    for (let yy = top - 4; yy > top - 42; yy -= 1) {
-      const k = (top - 4 - yy) / 38, center = cx - 3 + k * 24, half = (1 - k) * 17 + 1
-      P(ctx, center - half, yy, half * 2, 1, k > 0.55 ? S(C, 'knitD') : S(C, 'knit'))
-      P(ctx, center - half, yy, 2, 1, S(C, 'knitHi'))
+    for (let rxk = bx; rxk < bx + bw; rxk += 2) P(ctx, rxk, top - 3, 1, 5, S(C, 'redD')) // rib lines
+    // tapering knit body with a slight droop and purl-stitch dither
+    for (let yy = top - 4; yy > top - 44; yy -= 1) {
+      const k = (top - 4 - yy) / 40
+      const center = cx - 3 + k * 26 + Math.round(Math.sin(k * 3) * 2) // gentle droop curve
+      const half = (1 - k) * 17 + 1
+      const x0 = Math.round(center - half), x1 = Math.round(center + half)
+      P(ctx, x0, yy, x1 - x0, 1, k > 0.55 ? S(C, 'knitD') : S(C, 'knit'))
+      P(ctx, x0, yy, 2, 1, S(C, 'knitHi')) // lit edge
+      // purl-stitch speckle for knit texture
+      for (let sxk = x0 + 1; sxk < x1 - 1; sxk += 2) {
+        if (((sxk + yy) & 3) === 0) P(ctx, sxk, yy, 1, 1, S(C, 'knitHi'))
+        else if (((sxk + yy) & 3) === 2) P(ctx, sxk, yy, 1, 1, S(C, 'knitD'))
+      }
     }
-    P(ctx, cx + 18, top - 44, 6, 6, S(C, 'brassL'))
-    P(ctx, cx + 18, top - 44, 6, 2, S(C, 'brassHi'))
-    const gl = ctx.createRadialGradient(cx + 21, top - 41, 1, cx + 21, top - 41, 8)
-    gl.addColorStop(0, 'rgba(246,227,160,0.4)')
+    // fuller fluffy pom-pom (cluster of light/dark tufts)
+    const pcx = cx + 23, pcy = top - 46
+    for (let yy = -3; yy <= 3; yy++)
+      for (let xx = -3; xx <= 3; xx++)
+        if (xx * xx + yy * yy <= 9) {
+          const tuft = rnd(xx * 7 + yy * 13)
+          P(ctx, pcx + xx, pcy + yy, 1, 1, tuft > 0.6 ? S(C, 'brassHi') : tuft > 0.3 ? S(C, 'brassL') : S(C, 'brassD'))
+        }
+    const gl = ctx.createRadialGradient(pcx, pcy, 1, pcx, pcy, 9)
+    gl.addColorStop(0, 'rgba(246,227,160,0.35)')
     gl.addColorStop(1, 'rgba(246,227,160,0)')
     ctx.fillStyle = gl
-    ctx.fillRect(cx + 13, top - 49, 16, 16)
+    ctx.fillRect(pcx - 9, pcy - 9, 18, 18)
   }
-  // ---- HEADPHONES ----
+  // ---- HEADPHONES ---- padded headband + cushioned ear cups
   if (cos.includes('headphones')) {
+    // headband arc with stitched padding
     P(ctx, bx + 2, top - 7, bw - 4, 5, S(C, 'rFrame'))
     P(ctx, bx + 2, top - 7, bw - 4, 2, S(C, 'rFrameL'))
+    P(ctx, bx + 2, top - 4, bw - 4, 1, S(C, 'rFrameD'))
+    for (let sxk = bx + 5; sxk < bx + bw - 4; sxk += 4) P(ctx, sxk, top - 6, 1, 3, S(C, 'rFrameD')) // stitch dashes
+    // yokes down to the cups
     P(ctx, bx - 3, top - 4, 4, 9, S(C, 'rFrameD'))
+    P(ctx, bx - 3, top - 4, 1, 9, S(C, 'rFrameL'))
     P(ctx, bx + bw - 1, top - 4, 4, 9, S(C, 'rFrameD'))
-    P(ctx, bx - 8, top + 6, 9, 18, S(C, 'rD'))
-    P(ctx, bx - 8, top + 6, 9, 2, S(C, 'rL'))
-    P(ctx, bx - 7, top + 8, 7, 13, S(C, 'redL'))
-    P(ctx, bx - 7, top + 8, 7, 2, S(C, 'redRim'))
-    P(ctx, bx + bw - 1, top + 6, 9, 18, S(C, 'rD'))
-    P(ctx, bx + bw - 1, top + 6, 9, 2, S(C, 'rL'))
-    P(ctx, bx + bw, top + 8, 7, 13, S(C, 'redL'))
-    P(ctx, bx + bw, top + 8, 7, 2, S(C, 'redRim'))
+    P(ctx, bx + bw + 2, top - 4, 1, 9, S(C, 'rFrameL'))
+    // left ear cup: outer shell + foam cushion ring + lit rim
+    P(ctx, bx - 9, top + 6, 10, 19, S(C, 'rXD'))
+    P(ctx, bx - 9, top + 6, 10, 2, S(C, 'rL'))
+    P(ctx, bx - 8, top + 8, 8, 15, S(C, 'redL')) // cushion
+    P(ctx, bx - 8, top + 8, 8, 2, S(C, 'redRim'))
+    P(ctx, bx - 7, top + 10, 6, 11, S(C, 'redD')) // pressed-in centre
+    P(ctx, bx - 8, top + 8, 1, 15, S(C, 'redRim')) // lit cushion edge
+    // right ear cup
+    P(ctx, bx + bw - 1, top + 6, 10, 19, S(C, 'rXD'))
+    P(ctx, bx + bw - 1, top + 6, 10, 2, S(C, 'rL'))
+    P(ctx, bx + bw + 1, top + 8, 8, 15, S(C, 'redL'))
+    P(ctx, bx + bw + 1, top + 8, 8, 2, S(C, 'redRim'))
+    P(ctx, bx + bw + 2, top + 10, 6, 11, S(C, 'redD'))
   }
 
   // ---- FX ----
