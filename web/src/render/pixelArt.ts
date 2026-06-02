@@ -119,6 +119,26 @@ const P = (c: CanvasRenderingContext2D, x: number, y: number, w: number, h: numb
   c.fillStyle = col
   c.fillRect(x | 0, y | 0, Math.max(1, w | 0), Math.max(1, h | 0))
 }
+// Knock 45° steps out of a rect's corners so a square panel reads as a soft,
+// rounded chibi shell (corners cleared to transparent, drawn over the scene).
+function clearCorners(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, rad: number): void {
+  x = x | 0; y = y | 0; w = w | 0; h = h | 0
+  for (let i = 0; i < rad; i++) {
+    const len = rad - i
+    c.clearRect(x, y + i, len, 1)
+    c.clearRect(x + w - len, y + i, len, 1)
+    c.clearRect(x, y + h - 1 - i, len, 1)
+    c.clearRect(x + w - len, y + h - 1 - i, len, 1)
+  }
+}
+// Filled pixel disk (used to grow smooth tapering tubes like the nightcap droop).
+function fillBlob(c: CanvasRenderingContext2D, cx: number, cy: number, r: number, col: string): void {
+  cx = Math.round(cx); cy = Math.round(cy); r = Math.round(r)
+  for (let dy = -r; dy <= r; dy++) {
+    const w = Math.floor(Math.sqrt(Math.max(0, r * r - dy * dy)))
+    P(c, cx - w, cy + dy, 2 * w + 1, 1, col)
+  }
+}
 
 // ---- 3x5 digit font ----
 const DIG: Record<string, string[]> = {
@@ -886,172 +906,116 @@ export function drawScene(ctx: CanvasRenderingContext2D, W: number, H: number, s
 }
 
 // ============================================================
-// ROBOT (res ~ 72x96) — shaded, lit by moon (cool L) & fire (warm R)
+// ROBOT (res ~ 72x96) — chibi proportions: a big rounded head wearing the
+// face screen sits on a small squat body wearing the belly clock, with stubby
+// feet and little arms. Lit by moon (cool L) & fire (warm R).
 // ============================================================
 export function drawRobot(ctx: CanvasRenderingContext2D, W: number, H: number, state?: RobotStateObj): void {
   state = state || {}
   const C = pal(state)
   const st = state.state || 'idle', cos = state.costumes || [], t = state.t || 0
-  const cx = Math.round(W / 2), footY = H - 3
+  const cx = Math.round(W / 2)
   const bob = st === 'idle' || st === 'break' ? Math.round(Math.sin(t * 2)) : 0
   ctx.imageSmoothingEnabled = false
   ctx.clearRect(0, 0, W, H)
 
-  const top = footY - 66 + bob, bx = cx - 21, bw = 42, bodyBot = footY - 7
+  // chibi layout: big head, small body, stubby feet — stacked from the floor up
+  const footY = H - 3 + bob
+  const headW = 48, headH = 36, headX = cx - 24
+  const bodyW = 40, bodyH = 22, bodyX = cx - 20
+  const feetH = 5
+  const bodyBot = footY - feetH
+  const bodyTop = bodyBot - bodyH
+  const headBot = bodyTop + 1
+  const headTop = headBot - headH
+  const hasCap = cos.includes('nightcap'), hasCans = cos.includes('headphones')
 
-  // soft belly glow on the floor
-  const gr = ctx.createRadialGradient(cx, bodyBot - 6, 2, cx, bodyBot - 6, 30)
+  // warm belly glow pooling on the floor
+  const gr = ctx.createRadialGradient(cx, bodyBot, 2, cx, bodyBot, 32)
   gr.addColorStop(0, 'rgba(255,180,70,0.22)')
   gr.addColorStop(1, 'rgba(255,180,70,0)')
   ctx.fillStyle = gr
   ctx.fillRect(0, 0, W, H)
 
-  // shadow
-  P(ctx, cx - 18, footY - 1, 36, 3, 'rgba(0,0,0,0.45)')
-  // legs
-  P(ctx, cx - 13, bodyBot, 8, 8, S(C, 'rFrameD'))
-  P(ctx, cx + 5, bodyBot, 8, 8, S(C, 'rFrameD'))
-  P(ctx, cx - 13, bodyBot, 8, 1, S(C, 'rFrameL'))
-  P(ctx, cx + 5, bodyBot, 8, 1, S(C, 'rFrameL'))
-  P(ctx, cx - 13, bodyBot + 6, 8, 2, '#000')
-  P(ctx, cx + 5, bodyBot + 6, 8, 2, '#000')
-  // arms
-  P(ctx, bx - 5, top + 30, 5, 13, S(C, 'rFrameD'))
-  P(ctx, bx + bw, top + 30, 5, 13, S(C, 'rFrameD'))
-  P(ctx, bx - 5, top + 30, 5, 2, S(C, 'rFrameL'))
-  P(ctx, bx + bw, top + 30, 5, 2, S(C, 'rFrameL'))
+  // ground shadow (stays planted under the float)
+  P(ctx, cx - 15, H - 4, 30, 3, 'rgba(0,0,0,0.45)')
 
-  // antenna with a softly pulsing glowing bulb
-  if (!cos.includes('nightcap')) {
-    P(ctx, cx - 1, top - 8, 2, 9, S(C, 'rFrame'))
-    P(ctx, cx - 1, top - 8, 1, 9, S(C, 'rFrameL')) // lit side of the stalk
-    // glass bulb
-    P(ctx, cx - 2, top - 12, 4, 5, S(C, 'redL'))
-    P(ctx, cx - 2, top - 12, 4, 1, S(C, 'redRim'))
-    P(ctx, cx - 1, top - 11, 2, 2, S(C, 'redRim')) // hot filament
-    P(ctx, cx - 2, top - 11, 1, 1, '#fff') // glass glint
+  // ---- stubby feet ----
+  for (const fxx of [cx - 13, cx + 4]) {
+    P(ctx, fxx, bodyBot, 9, feetH, S(C, 'rFrameD'))
+    P(ctx, fxx, bodyBot, 9, 1, S(C, 'rFrameL'))
+    P(ctx, fxx, bodyBot + feetH - 1, 9, 1, '#000')
+    clearCorners(ctx, fxx, bodyBot, 9, feetH, 2)
+  }
+
+  // ---- little arms tucked at the body sides ----
+  for (const axx of [bodyX - 4, bodyX + bodyW - 1]) {
+    P(ctx, axx, bodyTop + 6, 5, 10, S(C, 'rFrameD'))
+    P(ctx, axx, bodyTop + 6, 5, 2, S(C, 'rFrameL'))
+    P(ctx, axx, bodyTop + 15, 5, 1, S(C, 'rXD'))
+    clearCorners(ctx, axx, bodyTop + 6, 5, 10, 2)
+  }
+
+  // ---- antenna with a softly pulsing bulb (bare head only) ----
+  if (!hasCap && !hasCans) {
+    P(ctx, cx - 1, headTop - 8, 2, 9, S(C, 'rFrame'))
+    P(ctx, cx - 1, headTop - 8, 1, 9, S(C, 'rFrameL'))
+    P(ctx, cx - 2, headTop - 12, 4, 5, S(C, 'redL'))
+    P(ctx, cx - 2, headTop - 12, 4, 1, S(C, 'redRim'))
+    P(ctx, cx - 1, headTop - 11, 2, 2, S(C, 'redRim'))
+    P(ctx, cx - 2, headTop - 11, 1, 1, '#fff')
     const pulse = 0.32 + (Math.sin(t * 3) + 1) * 0.16
-    const gl = ctx.createRadialGradient(cx, top - 10, 1, cx, top - 10, 9)
+    const gl = ctx.createRadialGradient(cx, headTop - 10, 1, cx, headTop - 10, 9)
     gl.addColorStop(0, 'rgba(232,120,80,' + pulse + ')')
     gl.addColorStop(1, 'rgba(232,120,80,0)')
     ctx.fillStyle = gl
-    ctx.fillRect(cx - 10, top - 20, 20, 18)
+    ctx.fillRect(cx - 10, headTop - 20, 20, 18)
   }
 
-  // ---- body chassis with shading ----
-  P(ctx, bx, top, bw, bodyBot - top, S(C, 'rFrameD')) // outer frame
-  P(ctx, bx, top, bw, 2, S(C, 'rFrameL'))
-  P(ctx, bx, top, 2, bodyBot - top, S(C, 'rFrame'))
-  P(ctx, bx + bw - 2, top, 2, bodyBot - top, S(C, 'rXD'))
-  P(ctx, bx, bodyBot - 2, bw, 2, S(C, 'rXD'))
-  // panel (3-tone vertical shade)
-  P(ctx, bx + 3, top + 3, bw - 6, bodyBot - top - 6, S(C, 'r'))
-  P(ctx, bx + 3, top + 3, bw - 6, 3, S(C, 'rL')) // top sheen
-  P(ctx, bx + 3, bodyBot - 7, bw - 6, 4, S(C, 'rD')) // bottom shade
-  P(ctx, bx + 3, top + 3, 4, bodyBot - top - 6, S(C, 'rL')) // left lit (moon)
-  P(ctx, bx + bw - 6, top + 3, 3, bodyBot - top - 6, S(C, 'rD')) // right base
-  // warm fire rim on the right edge
-  P(ctx, bx + bw - 4, top + 6, 1, bodyBot - top - 14, 'rgba(255,140,60,0.5)')
-  // cool moon rim left
-  P(ctx, bx + 2, top + 5, 1, bodyBot - top - 12, 'rgba(150,180,230,0.4)')
-  // corner cuts
-  P(ctx, bx, top, 2, 2, '#000')
-  P(ctx, bx + bw - 2, top, 2, 2, '#000')
-  P(ctx, bx, bodyBot - 2, 2, 2, '#000')
-  P(ctx, bx + bw - 2, bodyBot - 2, 2, 2, '#000')
-  // rivets
-  ;[[bx + 5, top + 5], [bx + bw - 7, top + 5], [bx + 5, bodyBot - 7], [bx + bw - 7, bodyBot - 7]].forEach(([rx, ry]) => {
-    P(ctx, rx, ry, 2, 2, S(C, 'rFrameL'))
-    P(ctx, rx + 1, ry + 1, 1, 1, S(C, 'rXD'))
+  // ---- neck collar + small body shell ----
+  P(ctx, cx - 7, bodyTop - 3, 14, 5, S(C, 'rFrameD'))
+  P(ctx, cx - 7, bodyTop - 3, 14, 1, S(C, 'rFrameL'))
+  P(ctx, cx - 7, bodyTop - 1, 14, 1, S(C, 'rXD'))
+  metalPanel(ctx, C, bodyX, bodyTop, bodyW, bodyH, 4)
+
+  // belly clock display
+  {
+    const xb = cx - 18, wb = 36, yb = bodyTop + 3, hb = 16
+    P(ctx, xb - 2, yb - 2, wb + 4, hb + 4, S(C, 'rFrameD'))
+    P(ctx, xb - 1, yb - 1, wb + 2, hb + 2, S(C, 'brassD'))
+    P(ctx, xb, yb, wb, hb, S(C, 'belly'))
+    P(ctx, xb, yb, wb, 1, 'rgba(255,180,70,0.25)')
+    for (let yy = yb + 1; yy < yb + hb; yy += 2) P(ctx, xb, yy, wb, 1, 'rgba(0,0,0,0.25)')
+    const mmss = state.mmss || '25:00', cell = 2, tw = textWidth(mmss, cell)
+    const dg = ctx.createRadialGradient(cx, yb + hb / 2, 1, cx, yb + hb / 2, wb * 0.7)
+    dg.addColorStop(0, 'rgba(255,180,70,0.5)')
+    dg.addColorStop(1, 'rgba(255,180,70,0)')
+    ctx.fillStyle = dg
+    ctx.fillRect(xb - 4, yb - 4, wb + 8, hb + 8)
+    drawDigits(ctx, Math.round(cx - tw / 2), yb + 4, mmss, cell, S(C, 'amber'))
+  }
+
+  // ---- big rounded head shell ----
+  metalPanel(ctx, C, headX, headTop, headW, headH, 5)
+  ;[[headX + 5, headTop + 5], [headX + headW - 7, headTop + 5], [headX + 5, headBot - 8], [headX + headW - 7, headBot - 8]].forEach(([rxx, ryy]) => {
+    P(ctx, rxx, ryy, 2, 2, S(C, 'rFrameL'))
+    P(ctx, rxx + 1, ryy + 1, 1, 1, S(C, 'rXD'))
   })
 
-  // ---- FACE ----
-  const fx = cx - 16, fy = top + 6, fw = 32, fh = 16
-  P(ctx, fx - 2, fy - 2, fw + 4, fh + 4, S(C, 'rFrameD'))
-  P(ctx, fx - 1, fy - 1, fw + 2, fh + 2, S(C, 'brassD'))
-  P(ctx, fx, fy, fw, fh, S(C, 'face'))
-  P(ctx, fx, fy, fw, 1, S(C, 'faceEdge'))
-  P(ctx, fx, fy, fw, 2, 'rgba(255,255,255,0.05)')
-  drawFace(ctx, cx, fy, st, C, t)
-
-  // ---- BELLY clock ----
-  const yb = top + 30, hb = 18, wb = 34, xb = cx - 17
-  P(ctx, xb - 2, yb - 2, wb + 4, hb + 4, S(C, 'rFrameD'))
-  P(ctx, xb - 1, yb - 1, wb + 2, hb + 2, S(C, 'brassD'))
-  P(ctx, xb, yb, wb, hb, S(C, 'belly'))
-  P(ctx, xb, yb, wb, 1, 'rgba(255,180,70,0.25)')
-  // scanlines
-  for (let yy = yb + 1; yy < yb + hb; yy += 2) P(ctx, xb, yy, wb, 1, 'rgba(0,0,0,0.25)')
-  const mmss = state.mmss || '25:00', cell = 2, tw = textWidth(mmss, cell)
-  // glow under digits
-  const dg = ctx.createRadialGradient(cx, yb + hb / 2, 1, cx, yb + hb / 2, wb * 0.7)
-  dg.addColorStop(0, 'rgba(255,180,70,0.5)')
-  dg.addColorStop(1, 'rgba(255,180,70,0)')
-  ctx.fillStyle = dg
-  ctx.fillRect(xb - 4, yb - 4, wb + 8, hb + 8)
-  drawDigits(ctx, Math.round(cx - tw / 2), yb + 4, mmss, cell, S(C, 'amber'))
-
-  // ---- NIGHTCAP ---- knit ribbed brim + tapering cap with purl texture + pom-pom
-  if (cos.includes('nightcap')) {
-    // folded ribbed brim
-    P(ctx, bx, top - 4, bw, 7, S(C, 'redL'))
-    P(ctx, bx, top - 4, bw, 2, S(C, 'redRim'))
-    P(ctx, bx, top + 1, bw, 2, S(C, 'redD'))
-    for (let rxk = bx; rxk < bx + bw; rxk += 2) P(ctx, rxk, top - 3, 1, 5, S(C, 'redD')) // rib lines
-    // tapering knit body with a slight droop and purl-stitch dither
-    for (let yy = top - 4; yy > top - 44; yy -= 1) {
-      const k = (top - 4 - yy) / 40
-      const center = cx - 3 + k * 26 + Math.round(Math.sin(k * 3) * 2) // gentle droop curve
-      const half = (1 - k) * 17 + 1
-      const x0 = Math.round(center - half), x1 = Math.round(center + half)
-      P(ctx, x0, yy, x1 - x0, 1, k > 0.55 ? S(C, 'knitD') : S(C, 'knit'))
-      P(ctx, x0, yy, 2, 1, S(C, 'knitHi')) // lit edge
-      // purl-stitch speckle for knit texture
-      for (let sxk = x0 + 1; sxk < x1 - 1; sxk += 2) {
-        if (((sxk + yy) & 3) === 0) P(ctx, sxk, yy, 1, 1, S(C, 'knitHi'))
-        else if (((sxk + yy) & 3) === 2) P(ctx, sxk, yy, 1, 1, S(C, 'knitD'))
-      }
-    }
-    // fuller fluffy pom-pom (cluster of light/dark tufts)
-    const pcx = cx + 23, pcy = top - 46
-    for (let yy = -3; yy <= 3; yy++)
-      for (let xx = -3; xx <= 3; xx++)
-        if (xx * xx + yy * yy <= 9) {
-          const tuft = rnd(xx * 7 + yy * 13)
-          P(ctx, pcx + xx, pcy + yy, 1, 1, tuft > 0.6 ? S(C, 'brassHi') : tuft > 0.3 ? S(C, 'brassL') : S(C, 'brassD'))
-        }
-    const gl = ctx.createRadialGradient(pcx, pcy, 1, pcx, pcy, 9)
-    gl.addColorStop(0, 'rgba(246,227,160,0.35)')
-    gl.addColorStop(1, 'rgba(246,227,160,0)')
-    ctx.fillStyle = gl
-    ctx.fillRect(pcx - 9, pcy - 9, 18, 18)
+  // face screen (big, centred on the head)
+  {
+    const fx = headX + 6, fw = headW - 12, fy = headTop + 9, fh = 18
+    P(ctx, fx - 2, fy - 2, fw + 4, fh + 4, S(C, 'rFrameD'))
+    P(ctx, fx - 1, fy - 1, fw + 2, fh + 2, S(C, 'brassD'))
+    P(ctx, fx, fy, fw, fh, S(C, 'face'))
+    P(ctx, fx, fy, fw, 1, S(C, 'faceEdge'))
+    P(ctx, fx, fy, fw, 2, 'rgba(255,255,255,0.05)')
+    drawFace(ctx, cx, fy, st, C, t)
   }
-  // ---- HEADPHONES ---- padded headband + cushioned ear cups
-  if (cos.includes('headphones')) {
-    // headband arc with stitched padding
-    P(ctx, bx + 2, top - 7, bw - 4, 5, S(C, 'rFrame'))
-    P(ctx, bx + 2, top - 7, bw - 4, 2, S(C, 'rFrameL'))
-    P(ctx, bx + 2, top - 4, bw - 4, 1, S(C, 'rFrameD'))
-    for (let sxk = bx + 5; sxk < bx + bw - 4; sxk += 4) P(ctx, sxk, top - 6, 1, 3, S(C, 'rFrameD')) // stitch dashes
-    // yokes down to the cups
-    P(ctx, bx - 3, top - 4, 4, 9, S(C, 'rFrameD'))
-    P(ctx, bx - 3, top - 4, 1, 9, S(C, 'rFrameL'))
-    P(ctx, bx + bw - 1, top - 4, 4, 9, S(C, 'rFrameD'))
-    P(ctx, bx + bw + 2, top - 4, 1, 9, S(C, 'rFrameL'))
-    // left ear cup: outer shell + foam cushion ring + lit rim
-    P(ctx, bx - 9, top + 6, 10, 19, S(C, 'rXD'))
-    P(ctx, bx - 9, top + 6, 10, 2, S(C, 'rL'))
-    P(ctx, bx - 8, top + 8, 8, 15, S(C, 'redL')) // cushion
-    P(ctx, bx - 8, top + 8, 8, 2, S(C, 'redRim'))
-    P(ctx, bx - 7, top + 10, 6, 11, S(C, 'redD')) // pressed-in centre
-    P(ctx, bx - 8, top + 8, 1, 15, S(C, 'redRim')) // lit cushion edge
-    // right ear cup
-    P(ctx, bx + bw - 1, top + 6, 10, 19, S(C, 'rXD'))
-    P(ctx, bx + bw - 1, top + 6, 10, 2, S(C, 'rL'))
-    P(ctx, bx + bw + 1, top + 8, 8, 15, S(C, 'redL'))
-    P(ctx, bx + bw + 1, top + 8, 8, 2, S(C, 'redRim'))
-    P(ctx, bx + bw + 2, top + 10, 6, 11, S(C, 'redD'))
-  }
+
+  // ---- costumes (drawn over the head) ----
+  if (hasCans) drawHeadphones(ctx, C, headX, headTop, headW, headH)
+  if (hasCap) drawNightcap(ctx, C, cx, headX, headTop, headW)
 
   // ---- FX ----
   if (st === 'complete') {
@@ -1061,18 +1025,116 @@ export function drawRobot(ctx: CanvasRenderingContext2D, W: number, H: number, s
       P(ctx, sx, sy - s, 1, s * 2 + 1, S(C, 'brassHi'))
       P(ctx, sx, sy, 1, 1, '#fff')
     }
-    if (tw2 > 0.3) spark(bx - 3, top + 2, 2)
-    if (tw2 > 0.6) spark(bx + bw + 3, top + 8, 2)
-    spark(cx, top - 9, Math.round(tw2 * 2) + 1)
+    if (tw2 > 0.3) spark(headX - 3, headTop + 4, 2)
+    if (tw2 > 0.6) spark(headX + headW + 3, headTop + 10, 2)
+    spark(cx, headTop - 6, Math.round(tw2 * 2) + 1)
   }
   if (st === 'dozing') {
     const zp = (t % 2.4) / 2.4
     ctx.fillStyle = S(C, 'parch')
     ctx.font = '8px "Press Start 2P",monospace'
     ctx.globalAlpha = 1 - zp
-    ctx.fillText('z', bx + bw + 3 + zp * 6, top - 2 - zp * 13)
+    ctx.fillText('z', headX + headW + 2 + zp * 6, headTop + 2 - zp * 13)
     ctx.globalAlpha = 1
   }
+}
+
+// A brass chassis panel: bevelled frame, 3-tone shaded inner face, warm/cool
+// rim lights, then knocked-round corners so it reads as a soft chibi shell.
+function metalPanel(c: CanvasRenderingContext2D, C: Palette, x: number, y: number, w: number, h: number, rad: number): void {
+  P(c, x, y, w, h, S(C, 'rFrameD')) // outer frame
+  P(c, x, y, w, 2, S(C, 'rFrameL'))
+  P(c, x, y, 2, h, S(C, 'rFrame'))
+  P(c, x + w - 2, y, 2, h, S(C, 'rXD'))
+  P(c, x, y + h - 2, w, 2, S(C, 'rXD'))
+  // inner face (3-tone vertical shade)
+  P(c, x + 3, y + 3, w - 6, h - 6, S(C, 'r'))
+  P(c, x + 3, y + 3, w - 6, 3, S(C, 'rL')) // top sheen
+  P(c, x + 3, y + h - 7, w - 6, 4, S(C, 'rD')) // bottom shade
+  P(c, x + 3, y + 3, 4, h - 6, S(C, 'rL')) // left lit (moon)
+  P(c, x + w - 6, y + 3, 3, h - 6, S(C, 'rD')) // right base
+  // rim lights
+  P(c, x + w - 4, y + 6, 1, h - 14, 'rgba(255,140,60,0.5)') // warm fire right
+  P(c, x + 2, y + 5, 1, h - 12, 'rgba(150,180,230,0.4)') // cool moon left
+  clearCorners(c, x, y, w, h, rad)
+}
+
+// Classic floppy nightcap: a rolled knit brim hugging the crown, a wide-based
+// cone that rises and flops to one side (grown from tapering blobs so it's
+// unmistakably a soft droopy cap), capped with a fluffy cream pom-pom.
+function drawNightcap(c: CanvasRenderingContext2D, C: Palette, cx: number, headX: number, headTop: number, headW: number): void {
+  const by = headTop - 1, bw = headW + 2, bxx = headX - 1
+  const baseY = by - 1
+  // Soft sock cap on a quadratic Bézier: rises from the crown, bends over and
+  // flops DOWN the right side, tip hanging by the ear. Grown from tapering
+  // blobs (fat base → thin tip) in three shaded passes for rounded knit volume.
+  const N = 64
+  const p0x = cx - 2, p0y = baseY, p1x = cx + 22, p1y = headTop - 16, p2x = cx + 25, p2y = headTop + 11
+  const path: Array<[number, number, number]> = []
+  for (let i = 0; i <= N; i++) {
+    const s = i / N, u = 1 - s
+    const px = u * u * p0x + 2 * u * s * p1x + s * s * p2x
+    const py = u * u * p0y + 2 * u * s * p1y + s * s * p2y
+    const half = u * 10 + 3
+    path.push([px, py, half])
+  }
+  for (const [px, py, half] of path) fillBlob(c, px, py, half, S(C, 'knit')) // body
+  for (const [px, py, half] of path) fillBlob(c, px + half * 0.4, py + half * 0.5, Math.max(1, half * 0.42), S(C, 'knitD')) // underside shade
+  for (const [px, py, half] of path) fillBlob(c, px - half * 0.35, py - half * 0.4, Math.max(1, half * 0.4), S(C, 'knitHi')) // lit crown ridge
+  // rolled, ribbed knit brim cuff across the top of the head
+  P(c, bxx, by, bw, 6, S(C, 'knitHi'))
+  P(c, bxx, by, bw, 2, S(C, 'parch')) // light roll
+  P(c, bxx, by + 5, bw, 1, S(C, 'knitD'))
+  for (let rxk = bxx + 1; rxk < bxx + bw - 1; rxk += 3) P(c, rxk, by + 1, 1, 4, S(C, 'knitD')) // ribs
+  clearCorners(c, bxx, by, bw, 6, 2)
+  const tipX = p2x, tipY = p2y
+  // fluffy cream pom-pom at the tip
+  const pcx = Math.round(tipX), pcy = Math.round(tipY) - 1
+  for (let yy = -4; yy <= 4; yy++)
+    for (let xx = -4; xx <= 4; xx++)
+      if (xx * xx + yy * yy <= 16) {
+        const tuft = rnd(xx * 7 + yy * 13)
+        P(c, pcx + xx, pcy + yy, 1, 1, tuft > 0.62 ? '#fff' : tuft > 0.32 ? S(C, 'parch') : S(C, 'knitHi'))
+      }
+  const gl = c.createRadialGradient(pcx, pcy, 1, pcx, pcy, 10)
+  gl.addColorStop(0, 'rgba(231,214,173,0.4)')
+  gl.addColorStop(1, 'rgba(231,214,173,0)')
+  c.fillStyle = gl
+  c.fillRect(pcx - 10, pcy - 10, 20, 20)
+}
+
+// Over-ear headphones: a thick metal headband arcing over the crown into two
+// big cushioned ear cups clamped on the sides of the head.
+function drawHeadphones(c: CanvasRenderingContext2D, C: Palette, headX: number, headTop: number, headW: number, headH: number): void {
+  const cupCy = headTop + Math.round(headH / 2)
+  const Lx = headX - 3, Rx = headX + headW + 3
+  const apex = headTop - 7, yoke = cupCy - 9
+  // headband arc over the crown (sin bow: ends at the cups, peak over the top)
+  const span = Rx - Lx
+  for (let i = 0; i <= span; i++) {
+    const s = i / span
+    const x = Lx + s * span
+    const y = yoke + (apex - yoke) * Math.sin(s * Math.PI)
+    P(c, Math.round(x), Math.round(y), 2, 4, S(C, 'rFrame'))
+    P(c, Math.round(x), Math.round(y), 2, 1, S(C, 'rFrameL'))
+    P(c, Math.round(x), Math.round(y) + 3, 2, 1, S(C, 'rFrameD'))
+  }
+  drawEarCup(c, C, Lx, cupCy)
+  drawEarCup(c, C, Rx, cupCy)
+}
+
+function drawEarCup(c: CanvasRenderingContext2D, C: Palette, cxk: number, cyk: number): void {
+  const w = 12, h = 18, x = cxk - 6, y = cyk - 9
+  P(c, x, y, w, h, '#16181f') // dark shell
+  P(c, x, y, w, 2, S(C, 'rFrameL')) // top sheen
+  P(c, x, y + h - 2, w, 2, '#000')
+  clearCorners(c, x, y, w, h, 5)
+  // foam cushion ring + pressed-in centre
+  P(c, x + 2, y + 3, w - 4, h - 6, S(C, 'redL'))
+  P(c, x + 2, y + 3, w - 4, 2, S(C, 'redRim'))
+  P(c, x + 3, y + 5, w - 6, h - 10, S(C, 'redD'))
+  P(c, x + 2, y + 3, 1, h - 6, S(C, 'redRim')) // lit cushion edge
+  clearCorners(c, x + 2, y + 3, w - 4, h - 6, 3)
 }
 
 function drawFace(ctx: CanvasRenderingContext2D, cx: number, fy: number, st: RobotState, C: Palette, t: number): void {
