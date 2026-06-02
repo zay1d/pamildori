@@ -1,0 +1,171 @@
+/* ============================================================
+   PAMILDORI — Dark Academia Pomodoro
+   Design tokens + base + keyframe stubs
+   Two themes: .theme-night (default) and .theme-day
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap');
+
+/* ---------- NIGHT (default) ---------- */
+.theme-night,
+:root {
+  --bg:        #15110c;
+  --bg-2:      #1d1710;
+  --panel:     #241c13;
+  --panel-2:   #2e2417;
+  --panel-hi:  #3a2d1b;
+  --ink:       #ece0c8;
+  --ink-soft:  #b7a98c;
+  --ink-faint: #7d715a;
+  --brass:     #c79a3f;
+  --brass-2:   #e3c074;
+  --burgundy:  #8c3b39;
+  --burgundy-2:#a8514d;
+  --olive:     #74703f;
+  --line:      rgba(199,154,63,0.20);
+  --line-2:    rgba(199,154,63,0.34);
+  --shadow:    rgba(0,0,0,0.55);
+  --shadow-soft: rgba(0,0,0,0.35);
+  /* robot */
+  --robot-body:   #3c2e20;
+  --robot-body-2: #4d3b28;
+  --robot-frame:  #c79a3f;
+  --robot-screen: #14110b;
+  --robot-screen-2:#1f1a10;
+  --robot-eye:    #e8c878;
+  --robot-glow:   rgba(231,200,120,0.55);
+  --paper-spot:   rgba(255,240,205,0.05);
+}
+
+/* ---------- DAY (warm lamplit sepia) ---------- */
+.theme-day {
+  --bg:        #c9b692;
+  --bg-2:      #d5c4a0;
+  --panel:     #e8dab7;
+  --panel-2:   #f0e5c8;
+  --panel-hi:  #f6eed6;
+  --ink:       #3a2c1c;
+  --ink-soft:  #6c5839;
+  --ink-faint: #9a8763;
+  --brass:     #9a6c20;
+  --brass-2:   #b9882c;
+  --burgundy:  #823735;
+  --burgundy-2:#9c4946;
+  --olive:     #5f5a2c;
+  --line:      rgba(80,54,24,0.22);
+  --line-2:    rgba(80,54,24,0.38);
+  --shadow:    rgba(70,48,22,0.28);
+  --shadow-soft: rgba(70,48,22,0.16);
+  /* robot keeps its walnut+brass identity, a touch lighter */
+  --robot-body:   #5a4430;
+  --robot-body-2: #6d543b;
+  --robot-frame:  #b07f2a;
+  --robot-screen: #241a10;
+  --robot-screen-2:#30231410;
+  --robot-screen-2:#302314;
+  --robot-eye:    #f0d089;
+  --robot-glow:   rgba(240,208,137,0.5);
+  --paper-spot:   rgba(120,80,30,0.05);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'EB Garamond', Georgia, serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* small-caps academic label */
+.label {
+  font-family: 'EB Garamond', serif;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-faint);
+}
+
+.serif { font-family: 'Playfair Display', Georgia, serif; }
+
+/* aged-paper / wood grain helpers (subtle) */
+.grain {
+  position: relative;
+}
+.grain::after {
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 20% 30%, var(--paper-spot) 0, transparent 40%),
+    radial-gradient(circle at 80% 70%, var(--paper-spot) 0, transparent 35%);
+  mix-blend-mode: screen;
+  opacity: .8;
+  border-radius: inherit;
+}
+
+/* ============================================================
+   KEYFRAME STUBS (animation placeholders)
+   ============================================================ */
+@keyframes pm-breathe {
+  0%,100% { transform: translateY(0) scale(1); }
+  50%     { transform: translateY(-2px) scale(1.012); }
+}
+@keyframes pm-blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95%           { transform: scaleY(0.08); }
+}
+@keyframes pm-float-z {
+  0%   { transform: translateY(0) scale(.7); opacity: 0; }
+  20%  { opacity: .9; }
+  100% { transform: translateY(-26px) translateX(10px) scale(1.1); opacity: 0; }
+}
+@keyframes pm-sparkle {
+  0%,100% { transform: scale(.5) rotate(0deg); opacity: 0; }
+  50%     { transform: scale(1) rotate(45deg);  opacity: 1; }
+}
+@keyframes pm-rain {
+  0%   { transform: translateY(-12%); }
+  100% { transform: translateY(112%); }
+}
+@keyframes pm-lightning {
+  0%, 93%, 100% { opacity: 0; }
+  94%, 97%      { opacity: .85; }
+  95%           { opacity: .25; }
+}
+@keyframes pm-cloud-drift {
+  0%   { transform: translateX(-8%); }
+  100% { transform: translateX(8%); }
+}
+@keyframes pm-candle {
+  0%,100% { transform: scaleY(1)   translateX(0);   opacity: 1; }
+  50%     { transform: scaleY(1.08) translateX(.6px); opacity: .85; }
+}
+@keyframes pm-star-twinkle {
+  0%,100% { opacity: .25; }
+  50%     { opacity: 1; }
+}
+@keyframes pm-sway {
+  0%,100% { transform: rotate(-1.2deg); }
+  50%     { transform: rotate(1.2deg); }
+}
+
+/* robot animation hooks */
+.pm-breathe { animation: pm-breathe 4.2s ease-in-out infinite; }
+.pm-eyes    { animation: pm-blink 5.5s ease-in-out infinite; }
+.pm-sway-soft { animation: pm-sway 5s ease-in-out infinite; }
+.pm-spk     { animation: pm-sparkle 1.6s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+.pm-z       { animation: pm-float-z 2.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+
+/* ---------- SKY GRADIENTS (time of day) ---------- */
+.sky { transition: background 1.2s ease; }
+.sky-night    { background: linear-gradient(#0a0e22 0%, #141a36 52%, #252b46 100%); }
+.sky-twilight { background: linear-gradient(#171436 0%, #3a2c4e 55%, #6a4a58 100%); }
+.sky-dawn     { background: linear-gradient(#2b2c52 0%, #7a5566 48%, #d99e72 82%, #e8b486 100%); }
+.sky-day      { background: linear-gradient(#5f82a8 0%, #93b3c8 50%, #cdd6cd 100%); }
+.sky-dusk     { background: linear-gradient(#241f42 0%, #6e3f54 42%, #b9694a 78%, #d68a55 100%); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; }
+}

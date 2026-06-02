@@ -1,0 +1,238 @@
+/* ============================================================
+   PAMILDORI — PIXEL EDITION
+   Dark academia · candlelit library · castle nights
+   Tokens + pixel fonts + chunky UI primitives
+   Themes: .theme-night (default) · .theme-day
+   (Ported 1:1 from design-ref/pixel.css)
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Pixelify+Sans:wght@400;500;600;700&family=Silkscreen:wght@400;700&family=VT323&display=swap');
+
+/* ---------- NIGHT (default) ---------- */
+.theme-night,
+:root {
+  --bg: #15121b; /* warm near-black */
+  --bg-2: #1c1824;
+  --panel: #241d2b; /* aubergine stone */
+  --panel-2: #2c2334;
+  --panel-hi: #382c42;
+  --ink: #ecdfc6; /* parchment */
+  --ink-soft: #b9a988;
+  --ink-faint: #8a7a5e;
+  --line: #3a2f44;
+  --line-2: #4c3d58;
+  --brass: #c8a24a;
+  --brass-2: #e6c574;
+  --brass-d: #8a6a2a;
+  --crimson: #8c2a2c;
+  --crimson-2: #b23c3a;
+  --green: #3e5d44; /* book green */
+  --shadow: rgba(0, 0, 0, 0.6);
+  --glow: rgba(255, 180, 80, 0);
+  --fire: #ff9a2a;
+}
+
+/* ---------- DAY (warm lamplit study) ---------- */
+.theme-day {
+  --bg: #b59a6f; /* aged paper / golden hall */
+  --bg-2: #c2a778;
+  --panel: #d8c294;
+  --panel-2: #e3d0a6;
+  --panel-hi: #efe0bd;
+  --ink: #3a2a18;
+  --ink-soft: #6a5230;
+  --ink-faint: #927442;
+  --line: #9a7c4c;
+  --line-2: #7e6238;
+  --brass: #9a6c20;
+  --brass-2: #b98a2c;
+  --brass-d: #6e4d18;
+  --crimson: #8c2f2c;
+  --crimson-2: #a8453e;
+  --green: #4d6b3e;
+  --shadow: rgba(80, 54, 24, 0.32);
+  --glow: rgba(255, 200, 110, 0);
+  --fire: #e08a26;
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+}
+body {
+  font-family: 'Pixelify Sans', monospace;
+  -webkit-font-smoothing: none;
+  image-rendering: pixelated;
+  background: #0c0a10;
+}
+
+/* center the phone frame on the plain web */
+#root {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* crisp-edge images & canvases */
+canvas,
+img.px {
+  image-rendering: pixelated;
+}
+
+/* ---------- type helpers ---------- */
+.font-disp {
+  font-family: 'Press Start 2P', monospace;
+}
+.font-ui {
+  font-family: 'Pixelify Sans', monospace;
+}
+.font-label {
+  font-family: 'Silkscreen', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.font-num {
+  font-family: 'VT323', monospace;
+}
+
+.label {
+  font-family: 'Silkscreen', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 9px;
+  color: var(--ink-faint);
+}
+
+/* ---------- pixel frame / bevel ----------
+   2-tone hard bevel: light top-left, dark bottom-right, sharp corners.
+*/
+.pf {
+  position: relative;
+  background: var(--panel);
+  border: 2px solid var(--line-2);
+  box-shadow:
+    inset 2px 2px 0 0 rgba(255, 255, 255, 0.05),
+    inset -2px -2px 0 0 rgba(0, 0, 0, 0.35),
+    0 0 0 2px var(--bg);
+  border-radius: 0; /* pixels = sharp */
+}
+.pf-raised {
+  background: linear-gradient(var(--panel-hi), var(--panel));
+  border: 2px solid var(--bg);
+  box-shadow:
+    inset 2px 2px 0 0 rgba(255, 255, 255, 0.12),
+    inset -2px -2px 0 0 rgba(0, 0, 0, 0.4);
+}
+.pf-brass {
+  background: linear-gradient(var(--brass-2), var(--brass));
+  color: #221603;
+  border: 2px solid var(--brass-d);
+  box-shadow:
+    inset 2px 2px 0 0 rgba(255, 255, 255, 0.4),
+    inset -2px -2px 0 0 rgba(0, 0, 0, 0.35);
+}
+.pf-inset {
+  background: var(--bg);
+  border: 2px solid var(--bg-2);
+  box-shadow:
+    inset 2px 2px 0 0 rgba(0, 0, 0, 0.55),
+    inset -1px -1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+button.pf,
+button.pf-raised,
+button.pf-brass {
+  cursor: pointer;
+}
+button:active.pf-raised,
+button:active.pf-brass {
+  box-shadow: inset 2px 2px 0 0 rgba(0, 0, 0, 0.4);
+  transform: translateY(1px);
+}
+
+/* belly clock glow */
+.belly-clock {
+  font-family: 'Press Start 2P', monospace;
+  color: #ffce5a;
+  text-shadow:
+    0 0 6px rgba(255, 170, 60, 0.7),
+    0 0 2px rgba(255, 170, 60, 0.9);
+  letter-spacing: 1px;
+}
+
+/* scanline overlay (subtle CRT on the whole screen) */
+.scanlines::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  background: repeating-linear-gradient(transparent 0 2px, rgba(0, 0, 0, 0.1) 2px 3px);
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+/* ---------- animation stubs ---------- */
+@keyframes pm-flick {
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+  45% {
+    opacity: 1;
+  }
+  55% {
+    opacity: 0.7;
+  }
+  70% {
+    opacity: 0.95;
+  }
+}
+@keyframes pm-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes pm-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+@keyframes pm-ztext {
+  0% {
+    transform: translateY(0) scale(0.8);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-14px) translateX(6px) scale(1.1);
+    opacity: 0;
+  }
+}
+
+.pm-flick {
+  animation: pm-flick 2.4s steps(4) infinite;
+}
+.pm-bob {
+  animation: pm-bob 3.2s steps(4) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+  }
+}
