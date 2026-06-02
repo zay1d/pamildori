@@ -79,10 +79,12 @@ export function TimerScreen({
   settings,
   activeTask = null,
   onFocusComplete,
+  musicPlaying = false,
 }: {
   settings: Settings
   activeTask?: Task | null
   onFocusComplete?: (minutes: number) => void
+  musicPlaying?: boolean
 }): JSX.Element {
   const { theme, timeofday } = useTheme(settings)
   const timer = usePomodoro(settings, onFocusComplete)
@@ -94,8 +96,10 @@ export function TimerScreen({
   // Активный пресет — только в фокус-режиме, если совпадает.
   const activePreset = timer.mode === 'focus' && PRESETS.includes(focusMin) ? focusMin : -1
 
-  // Костюмы: ночной колпак при тёмной теме. Наушники придут с юнитом плейлиста.
-  const costumes: Costume[] = theme === 'night' ? ['nightcap'] : []
+  // Костюмы: ночной колпак при тёмной теме + наушники, когда играет музыка.
+  const costumes: Costume[] = []
+  if (theme === 'night') costumes.push('nightcap')
+  if (musicPlaying) costumes.push('headphones')
 
   const scene = { theme, timeofday, weather: settings.weather, fireplace: true, drape: true }
   const robot = { theme, state: robotStateFor(timer.mode, timer.status), costumes, mmss: timer.mmss }

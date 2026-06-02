@@ -9,10 +9,11 @@ import { TimerScreen } from './screens/TimerScreen'
 import { TasksScreen } from './screens/TasksScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
 import { StatsScreen } from './screens/StatsScreen'
-import { Placeholder } from './screens/Placeholder'
+import { PlaylistScreen } from './screens/PlaylistScreen'
 import { useSettings } from './hooks/useSettings'
 import { useTasks } from './hooks/useTasks'
 import { useStats } from './hooks/useStats'
+import { usePlaylist } from './hooks/usePlaylist'
 import { useTheme } from './hooks/useTheme'
 import type { Settings } from './types'
 
@@ -20,6 +21,7 @@ export default function App(): JSX.Element {
   const [settings, setSettings] = useSettings()
   const tasks = useTasks()
   const stats = useStats()
+  const player = usePlaylist()
   const [tab, setTab] = useState<TabId>('timer')
   const { theme } = useTheme(settings)
 
@@ -37,11 +39,16 @@ export default function App(): JSX.Element {
     <Phone theme={theme}>
       <StatusBar />
       {tab === 'timer' && (
-        <TimerScreen settings={settings} activeTask={tasks.active} onFocusComplete={handleFocusComplete} />
+        <TimerScreen
+          settings={settings}
+          activeTask={tasks.active}
+          onFocusComplete={handleFocusComplete}
+          musicPlaying={player.playing}
+        />
       )}
       {tab === 'tasks' && <TasksScreen tasks={tasks} />}
       {tab === 'stats' && <StatsScreen stats={stats} dailyGoal={settings.dailyGoal} />}
-      {tab === 'playlist' && <Placeholder title="Music" />}
+      {tab === 'playlist' && <PlaylistScreen player={player} />}
       {tab === 'settings' && <SettingsScreen settings={settings} onChange={updateSettings} />}
       <TabBar active={tab} onNav={setTab} />
     </Phone>
