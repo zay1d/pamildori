@@ -8,21 +8,25 @@ import type { TabId } from './components/ui/pixelUi'
 import { TimerScreen } from './screens/TimerScreen'
 import { TasksScreen } from './screens/TasksScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
+import { StatsScreen } from './screens/StatsScreen'
 import { Placeholder } from './screens/Placeholder'
 import { useSettings } from './hooks/useSettings'
 import { useTasks } from './hooks/useTasks'
+import { useStats } from './hooks/useStats'
 import { useTheme } from './hooks/useTheme'
 import type { Settings } from './types'
 
 export default function App(): JSX.Element {
   const [settings, setSettings] = useSettings()
   const tasks = useTasks()
+  const stats = useStats()
   const [tab, setTab] = useState<TabId>('timer')
   const { theme } = useTheme(settings)
 
-  // Завершённая фокус-сессия засчитывает помодоро активной задаче.
-  const handleFocusComplete = (): void => {
+  // Завершённая фокус-сессия засчитывает помодоро активной задаче и в статистику.
+  const handleFocusComplete = (minutes: number): void => {
     tasks.incrementActiveDone()
+    stats.record(minutes)
   }
 
   const updateSettings = (patch: Partial<Settings>): void => {
@@ -36,7 +40,7 @@ export default function App(): JSX.Element {
         <TimerScreen settings={settings} activeTask={tasks.active} onFocusComplete={handleFocusComplete} />
       )}
       {tab === 'tasks' && <TasksScreen tasks={tasks} />}
-      {tab === 'stats' && <Placeholder title="Stats" />}
+      {tab === 'stats' && <StatsScreen stats={stats} dailyGoal={settings.dailyGoal} />}
       {tab === 'playlist' && <Placeholder title="Music" />}
       {tab === 'settings' && <SettingsScreen settings={settings} onChange={updateSettings} />}
       <TabBar active={tab} onNav={setTab} />
