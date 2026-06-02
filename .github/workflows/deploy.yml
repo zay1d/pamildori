@@ -36,6 +36,9 @@ jobs:
       - run: npm ci
       - run: npm run build
       - uses: actions/configure-pages@v5
+        with:
+          # Включить Pages автоматически, если ещё не включён (не нужно лезть в настройки).
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: web/dist
