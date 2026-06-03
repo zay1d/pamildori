@@ -314,7 +314,7 @@ export function Ctrl({
         color: primary ? '#221603' : 'var(--ink-soft)',
       }}
     >
-      <span style={{ fontFamily: "'Press Start 2P', monospace", fontSize: primary ? 14 : 12, lineHeight: 1 }}>
+      <span style={{ fontFamily: "'Jersey 25', monospace", fontSize: primary ? 14 : 12, lineHeight: 1 }}>
         {icon}
       </span>
       <span className="font-label" style={{ fontSize: 8 }}>

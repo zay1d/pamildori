@@ -1032,7 +1032,7 @@ export function drawRobot(ctx: CanvasRenderingContext2D, W: number, H: number, s
   if (st === 'dozing') {
     const zp = (t % 2.4) / 2.4
     ctx.fillStyle = S(C, 'parch')
-    ctx.font = '8px "Press Start 2P",monospace'
+    ctx.font = '8px "Jersey 25",monospace'
     ctx.globalAlpha = 1 - zp
     ctx.fillText('z', headX + headW + 2 + zp * 6, headTop + 2 - zp * 13)
     ctx.globalAlpha = 1

@@ -6,7 +6,7 @@
    (Ported 1:1 from design-ref/pixel.css)
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Pixelify+Sans:wght@400;500;600;700&family=Silkscreen:wght@400;700&family=VT323&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Jersey+25&family=Pixelify+Sans:wght@400;500;600;700&family=VT323&display=swap');
 
 /* ---------- NIGHT (default) ---------- */
 .theme-night,
@@ -83,13 +83,13 @@ img.px {
 
 /* ---------- type helpers ---------- */
 .font-disp {
-  font-family: 'Press Start 2P', monospace;
+  font-family: 'Jersey 25', monospace;
 }
 .font-ui {
   font-family: 'Pixelify Sans', monospace;
 }
 .font-label {
-  font-family: 'Silkscreen', monospace;
+  font-family: 'Pixelify Sans', monospace;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -98,7 +98,7 @@ img.px {
 }
 
 .label {
-  font-family: 'Silkscreen', monospace;
+  font-family: 'Pixelify Sans', monospace;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   font-size: 9px;
@@ -154,7 +154,7 @@ button:active.pf-brass {
 
 /* belly clock glow */
 .belly-clock {
-  font-family: 'Press Start 2P', monospace;
+  font-family: 'Jersey 25', monospace;
   color: #ffce5a;
   text-shadow:
     0 0 6px rgba(255, 170, 60, 0.7),

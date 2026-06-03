@@ -42,7 +42,7 @@ function RoundBtn({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontFamily: "'Press Start 2P', monospace",
+        fontFamily: "'Jersey 25', monospace",
         fontSize: primary ? 15 : 11,
         color: primary ? '#221603' : active ? 'var(--brass-2)' : 'var(--ink-soft)',
         flex: '0 0 auto',

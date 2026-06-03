@@ -180,7 +180,7 @@ function TaskRow({
           alignItems: 'center',
           justifyContent: 'center',
           color: 'var(--brass-2)',
-          fontFamily: "'Press Start 2P', monospace",
+          fontFamily: "'Jersey 25', monospace",
           fontSize: 11,
         }}
       >

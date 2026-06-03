@@ -178,7 +178,7 @@ export function SettingsScreen({
               justifyContent: 'center',
               background: 'var(--panel)',
               color: 'var(--brass-2)',
-              fontFamily: "'Press Start 2P', monospace",
+              fontFamily: "'Jersey 25', monospace",
               fontSize: 14,
             }}
           >
