@@ -14,8 +14,8 @@ Stores each user's audio on the VPS and serves it to the Mini App.
 Single VPS, personal playlists → disk + SQLite is the right size (no DB server,
 no object store to operate). Long polling sidesteps the webhook/DNS requirement
 for the bot; the API still needs HTTPS (the Mini App is served over HTTPS and
-can't call plain HTTP), which **Caddy** provides via Let's Encrypt for the
-domain `api.pamildori.uz`.
+can't call plain HTTP) — provided here by **nginx + Let's Encrypt** (certbot)
+for the domain `api.pamildori.uz`.
 
 ## Prerequisites
 - A VPS with Docker + Docker Compose, ports **80** and **443** open.
@@ -29,44 +29,36 @@ The domain `pamildori.uz` is on Cloudflare. Add one record for the backend:
 |------|------|-----------|--------------|
 | A    | api  | <VPS IP>  | **DNS only** (grey cloud) |
 
-→ `api.pamildori.uz` resolves to the VPS, and Caddy issues the TLS cert
-automatically. **Grey cloud is required** — an orange (proxied) record blocks
-Caddy's HTTP-01 challenge. (Fallback with no DNS at all: use `sslip.io`, e.g.
-`203-0-113-7.sslip.io` for IP `203.0.113.7`.)
+→ `api.pamildori.uz` resolves to the VPS so certbot can issue the TLS cert.
+**Grey cloud is required** — an orange (proxied) record blocks the Let's Encrypt
+HTTP-01 challenge.
 
-## Deploy A — shared VPS that already runs nginx (this project's setup)
+## Deploy — shared VPS behind nginx (this project's setup)
 The VPS already serves other sites through nginx (it owns ports 80/443), and
-port 8080 is taken by another app. So **don't** run Caddy here — run only the
-app on a local port and add a vhost to the existing nginx.
+port 8080 is taken by another app. So the app runs in Docker on a local port
+and the existing nginx fronts it with TLS.
 
 ```bash
 cd pamildori/server
 cp .env.example .env          # set BOT_TOKEN (PUBLIC_HOST=api.pamildori.uz already)
-docker compose -f docker-compose.nginx.yml up -d --build
+docker compose up -d --build
 ss -ltnp | grep 8090          # app should be listening on 127.0.0.1:8090
 curl http://127.0.0.1:8090/api/health   # → {"ok":true}
 ```
-Add the nginx site + TLS:
+Add the nginx vhost, then issue the cert with the **webroot** method (the certbot
+`--nginx` plugin can choke on a crowded shared nginx):
 ```bash
 sudo cp deploy/pamildori.nginx.conf /etc/nginx/sites-available/api.pamildori.uz
 sudo ln -s /etc/nginx/sites-available/api.pamildori.uz /etc/nginx/sites-enabled/
+sudo mkdir -p /var/www/certbot
 sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d api.pamildori.uz      # issues + wires the TLS cert
+sudo certbot certonly --webroot -w /var/www/certbot -d api.pamildori.uz
+# then uncomment the `listen 443 ssl` block in the vhost and reload:
+sudo nginx -t && sudo systemctl reload nginx
 ```
 Verify: `curl https://api.pamildori.uz/api/health` → `{"ok":true}`.
-> If 8090 is also taken, change both the host port in `docker-compose.nginx.yml`
-> and `proxy_pass` in the nginx conf to a free port.
-
-## Deploy B — dedicated VPS (Caddy + own domain or sslip.io)
-Use this only when nothing else owns 80/443.
-```bash
-cd server
-cp .env.example .env
-#   set BOT_TOKEN, PUBLIC_HOST, PUBLIC_BASE_URL (https://<PUBLIC_HOST>)
-docker compose up -d --build
-docker compose logs -f app      # should show: bot @<name> polling, API listening
-```
-Verify: `curl https://<PUBLIC_HOST>/api/health` → `{"ok":true}`.
+> If 8090 is taken, change both the host port in `docker-compose.yml` and
+> `proxy_pass` in the nginx conf to a free port.
 
 ## Run without Docker (Node ≥ 22)
 ```bash
@@ -76,7 +68,7 @@ cp .env.example .env   # edit values; set HOST=0.0.0.0 only if not behind a prox
 npm start              # node --experimental-strip-types src/server.ts
 npm test               # unit tests for auth + safe-path + range logic
 ```
-Put Caddy (or nginx) in front for HTTPS; point `reverse_proxy` at `PORT`.
+Put nginx in front for HTTPS; point `proxy_pass` at `PORT`.
 
 ## Connect Telegram
 In @BotFather:
@@ -118,7 +110,7 @@ Accepted / operational follow-ups (do these for production):
 - **Lockfile**: run `npm install` once and **commit `package-lock.json`** — the
   Dockerfile then uses `npm ci` automatically for reproducible builds.
 - **STREAM_SECRET**: set an explicit random value (see `.env.example`).
-- **Rate limiting & disk quota**: add `@fastify/rate-limit` or limit at Caddy, and
+- **Rate limiting & disk quota**: add `@fastify/rate-limit` or limit in nginx, and
   monitor `DATA_DIR` usage (per-user cap is 500 tracks; no global cap yet).
 - **initData freshness**: default `INITDATA_MAX_AGE_SEC=86400` favors long Mini App
   sessions over replay hardening; lower it if you prefer tighter replay windows.
