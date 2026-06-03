@@ -34,7 +34,7 @@ export class ErrorBoundary extends Component<Props, State> {
           padding: 20,
           background: '#15121b',
           color: '#ecdfc6',
-          fontFamily: "'Pixelify Sans', monospace",
+          fontFamily: "'DotGothic16', monospace",
           display: 'flex',
           flexDirection: 'column',
           gap: 10,
@@ -66,7 +66,7 @@ export class ErrorBoundary extends Component<Props, State> {
             background: '#c8a24a',
             color: '#221603',
             border: '2px solid #8a6a2a',
-            fontFamily: "'Pixelify Sans', monospace",
+            fontFamily: "'DotGothic16', monospace",
             fontSize: 14,
             cursor: 'pointer',
           }}

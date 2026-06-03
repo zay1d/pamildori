@@ -156,7 +156,7 @@ export function TimerScreen({
               style={{
                 flex: 1,
                 padding: '7px 10px',
-                fontFamily: "'Pixelify Sans', monospace",
+                fontFamily: "'DotGothic16', monospace",
                 fontSize: 15,
                 color: 'var(--ink)',
                 background: 'var(--bg)',
@@ -167,7 +167,7 @@ export function TimerScreen({
             <button
               className="pf-brass"
               onClick={applyCustom}
-              style={{ padding: '7px 12px', fontFamily: "'Pixelify Sans', monospace", fontSize: 14, fontWeight: 600 }}
+              style={{ padding: '7px 12px', fontFamily: "'DotGothic16', monospace", fontSize: 14, fontWeight: 600 }}
             >
               Set
             </button>

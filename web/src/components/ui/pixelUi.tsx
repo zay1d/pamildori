@@ -66,7 +66,7 @@ export function Phone({
         overflow: 'hidden',
         background: 'var(--bg)',
         color: 'var(--ink)',
-        fontFamily: "'Pixelify Sans', monospace",
+        fontFamily: "'DotGothic16', monospace",
         display: 'flex',
         flexDirection: 'column',
         ...style,
@@ -187,7 +187,7 @@ export function ModeSeg({ active = 'focus', onChange }: { active?: Mode; onChang
             className={on ? 'pf-brass' : 'pf'}
             style={{
               padding: '8px 4px',
-              fontFamily: "'Pixelify Sans', monospace",
+              fontFamily: "'DotGothic16', monospace",
               fontSize: 14,
               fontWeight: 600,
               color: on ? '#221603' : 'var(--ink-soft)',

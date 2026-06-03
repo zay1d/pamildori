@@ -48,7 +48,7 @@ function Stepper({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontFamily: "'Pixelify Sans', monospace",
+    fontFamily: "'DotGothic16', monospace",
     fontSize: 16,
     color: 'var(--ink-soft)',
     lineHeight: 1,
@@ -88,7 +88,7 @@ function AddForm({ onAdd }: { onAdd: (title: string, estimate: number) => void }
         className="pf-inset"
         style={{
           padding: '8px 10px',
-          fontFamily: "'Pixelify Sans', monospace",
+          fontFamily: "'DotGothic16', monospace",
           fontSize: 15,
           color: 'var(--ink)',
           background: 'var(--bg)',
@@ -104,7 +104,7 @@ function AddForm({ onAdd }: { onAdd: (title: string, estimate: number) => void }
           disabled={!title.trim()}
           style={{
             padding: '8px 18px',
-            fontFamily: "'Pixelify Sans', monospace",
+            fontFamily: "'DotGothic16', monospace",
             fontSize: 14,
             fontWeight: 600,
             opacity: title.trim() ? 1 : 0.5,
@@ -149,7 +149,7 @@ function TaskRow({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontFamily: "'Pixelify Sans', monospace",
+    fontFamily: "'DotGothic16', monospace",
     fontSize: 14,
     lineHeight: 1,
     flex: '0 0 auto',
@@ -206,7 +206,7 @@ function TaskRow({
             className="pf-inset"
             style={{
               padding: '4px 6px',
-              fontFamily: "'Pixelify Sans', monospace",
+              fontFamily: "'DotGothic16', monospace",
               fontSize: 14,
               color: 'var(--ink)',
               background: 'var(--bg)',

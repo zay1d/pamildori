@@ -66,7 +66,7 @@ function Num({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontFamily: "'Pixelify Sans', monospace",
+    fontFamily: "'DotGothic16', monospace",
     fontSize: 16,
     color: 'var(--ink-soft)',
     lineHeight: 1,
@@ -131,7 +131,7 @@ function Seg<T extends string>({
             className={on ? 'pf-brass' : 'pf'}
             style={{
               padding: '7px 2px',
-              fontFamily: "'Pixelify Sans', monospace",
+              fontFamily: "'DotGothic16', monospace",
               fontSize: 13,
               fontWeight: 600,
               color: on ? '#221603' : 'var(--ink-soft)',
