@@ -1,8 +1,8 @@
 // ============================================================
 // PlaylistScreen.tsx — плеер плейлиста + эмбиент-звуки (pixel edition).
 // Транспорт (play/pause/next/prev/shuffle/repeat/volume/прогресс),
-// список треков, подсказка про загрузку через Telegram-бота, и блок
-// эмбиент-звуков. Пока на мок-данных; реальное аудио придёт с VPS.
+// список треков (с бэкенда через usePlaylist; вне Telegram — демо-мок),
+// удаление трека, подсказка про загрузку через бота, и блок эмбиент-звуков.
 // ============================================================
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
@@ -124,8 +124,8 @@ export function PlaylistScreen({ player }: { player: PlaylistApi }): JSX.Element
         <span className="font-disp" style={{ fontSize: 14, color: 'var(--brass-2)' }}>
           Music
         </span>
-        <span className="font-label" style={{ fontSize: 9, color: 'var(--ink-faint)' }}>
-          {player.tracks.length} tracks
+        <span className="font-label" style={{ fontSize: 9, color: player.error ? 'var(--brass-2)' : 'var(--ink-faint)' }}>
+          {player.loading ? 'loading…' : player.error ? player.error : `${player.tracks.length} tracks`}
         </span>
       </div>
 
@@ -196,29 +196,46 @@ export function PlaylistScreen({ player }: { player: PlaylistApi }): JSX.Element
           {player.tracks.map((t, i) => {
             const on = i === player.index
             return (
-              <button
-                key={t.id}
-                onClick={() => player.select(i)}
-                className={on ? 'pf-raised' : 'pf'}
-                style={{ ...rowBase, textAlign: 'left', cursor: 'pointer' }}
-              >
-                <span style={{ width: 18, flex: '0 0 auto', color: on ? 'var(--brass-2)' : 'var(--ink-faint)', fontSize: 12 }}>
-                  {on && player.playing ? '▶' : i + 1}
-                </span>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div className="font-ui" style={{ fontSize: 14, color: on ? 'var(--brass-2)' : 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {t.title}
+              <div key={t.id} style={{ display: 'flex', alignItems: 'stretch', gap: 4 }}>
+                <button
+                  onClick={() => player.select(i)}
+                  className={on ? 'pf-raised' : 'pf'}
+                  style={{ ...rowBase, flex: 1, minWidth: 0, textAlign: 'left', cursor: 'pointer' }}
+                >
+                  <span style={{ width: 18, flex: '0 0 auto', color: on ? 'var(--brass-2)' : 'var(--ink-faint)', fontSize: 12 }}>
+                    {on && player.playing ? '▶' : i + 1}
+                  </span>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div className="font-ui" style={{ fontSize: 14, color: on ? 'var(--brass-2)' : 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {t.title}
+                    </div>
+                    <div className="font-label" style={{ fontSize: 8, color: 'var(--ink-faint)' }}>
+                      {t.artist}
+                    </div>
                   </div>
-                  <div className="font-label" style={{ fontSize: 8, color: 'var(--ink-faint)' }}>
-                    {t.artist}
-                  </div>
-                </div>
-                <span className="font-num" style={{ fontSize: 13, color: 'var(--ink-faint)', flex: '0 0 auto' }}>
-                  {mmss(t.duration)}
-                </span>
-              </button>
+                  <span className="font-num" style={{ fontSize: 13, color: 'var(--ink-faint)', flex: '0 0 auto' }}>
+                    {mmss(t.duration)}
+                  </span>
+                </button>
+                {player.source === 'api' && (
+                  <button
+                    onClick={() => player.remove(t.id)}
+                    className="pf"
+                    aria-label={`Delete ${t.title}`}
+                    title="Delete"
+                    style={{ width: 34, flex: '0 0 auto', color: 'var(--ink-faint)', fontSize: 13, cursor: 'pointer' }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
             )
           })}
+          {player.source === 'api' && !player.loading && player.tracks.length === 0 && (
+            <div className="font-label" style={{ fontSize: 9, color: 'var(--ink-faint)', textAlign: 'center', padding: '6px 0' }}>
+              Your playlist is empty
+            </div>
+          )}
         </div>
 
         {/* add via bot hint */}

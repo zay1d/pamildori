@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePersistedState } from './usePersistedState'
 import { STORAGE_KEYS } from '../storage/storage'
+import { apiEnabled, fetchTracks, deleteTrack as apiDeleteTrack, type ApiTrack } from '../api'
 
 // ============================================================
 // usePlaylist — плеер пользовательского плейлиста.
 //
-// Сейчас работает на МОК-треках с симуляцией воспроизведения (прогресс
-// тикает таймером), чтобы UI был живым на демо. Когда появится VPS-бэкенд,
-// мок-список заменится загруженным с API, а симуляция — реальным
-// HTMLAudioElement (интерфейс хука менять не придётся).
+// Если настроен бэкенд (VITE_API_BASE) и мы внутри Telegram — треки грузятся
+// с VPS и играют через настоящий HTMLAudioElement. Иначе (обычный веб-демо)
+// используется мок-список с симуляцией прогресса. Интерфейс PlaylistApi один
+// и тот же, поэтому PlaylistScreen менять не нужно.
 // ============================================================
 
 export interface Track {
@@ -17,7 +18,7 @@ export interface Track {
   artist: string
   /** Длительность, секунд. */
   duration: number
-  /** URL аудио (появится с VPS); пока пусто → симуляция. */
+  /** URL аудио с VPS. Если пусто → демо-режим с симуляцией. */
   src?: string
 }
 
@@ -30,7 +31,7 @@ interface PlayerPrefs {
 }
 const DEFAULT_PREFS: PlayerPrefs = { volume: 0.8, shuffle: false, repeat: 'off' }
 
-// Демо-плейлист в духе dark academia (заменится треками с VPS).
+// Демо-плейлист в духе dark academia (используется вне Telegram / без бэкенда).
 const MOCK_TRACKS: Track[] = [
   { id: 't1', title: 'Candlelit Study', artist: 'Aurelius', duration: 184 },
   { id: 't2', title: 'Rain on the Cloister', artist: 'M. Ficino', duration: 222 },
@@ -38,6 +39,10 @@ const MOCK_TRACKS: Track[] = [
   { id: 't4', title: 'Midnight Marginalia', artist: 'The Scriveners', duration: 205 },
   { id: 't5', title: 'Ember Light Sonata', artist: 'Cassiodorus', duration: 241 },
 ]
+
+function toTrack(t: ApiTrack): Track {
+  return { id: t.id, title: t.title, artist: t.artist || '—', duration: t.duration, src: t.url }
+}
 
 export interface PlaylistApi {
   tracks: Track[]
@@ -49,6 +54,12 @@ export interface PlaylistApi {
   shuffle: boolean
   repeat: Repeat
   volume: number
+  /** Идёт загрузка списка с бэкенда. */
+  loading: boolean
+  /** Текст ошибки загрузки/воспроизведения, либо null. */
+  error: string | null
+  /** Режим данных: реальный бэкенд или демо-мок. */
+  source: 'api' | 'mock'
   play: () => void
   pause: () => void
   toggle: () => void
@@ -59,17 +70,111 @@ export interface PlaylistApi {
   toggleShuffle: () => void
   cycleRepeat: () => void
   select: (index: number) => void
+  /** Перезагрузить список с бэкенда. */
+  reload: () => void
+  /** Удалить трек (бэкенд + локально). В демо-режиме — no-op. */
+  remove: (id: string) => void
 }
 
 export function usePlaylist(): PlaylistApi {
-  const tracks = MOCK_TRACKS
+  const useApi = apiEnabled()
+  const [tracks, setTracks] = useState<Track[]>(useApi ? [] : MOCK_TRACKS)
+  const [loading, setLoading] = useState<boolean>(useApi)
+  const [error, setError] = useState<string | null>(null)
+
   const [prefs, setPrefs] = usePersistedState<PlayerPrefs>(STORAGE_KEYS.player, DEFAULT_PREFS)
   const [index, setIndex] = useState(0)
   const [playing, setPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
 
   const current = tracks[index] ?? null
+  const isRealAudio = Boolean(current?.src)
 
+  // ---- load tracks from the backend ----
+  const reload = useCallback(() => {
+    if (!apiEnabled()) return
+    setLoading(true)
+    setError(null)
+    const ctrl = new AbortController()
+    fetchTracks(ctrl.signal)
+      .then((list) => {
+        setTracks(list.map(toTrack))
+        setIndex((i) => (i < list.length ? i : 0))
+      })
+      .catch((e) => {
+        if (e?.name !== 'AbortError') setError('Не удалось загрузить плейлист')
+      })
+      .finally(() => setLoading(false))
+    return () => ctrl.abort()
+  }, [])
+
+  useEffect(() => {
+    if (!useApi) return
+    const cleanup = reload()
+    return cleanup
+  }, [useApi, reload])
+
+  // ---- real <audio> element (only used when the current track has a src) ----
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  if (audioRef.current === null && typeof Audio !== 'undefined') {
+    audioRef.current = new Audio()
+  }
+
+  // End-of-track handler kept in a ref so listeners always see fresh prefs.
+  const handleEnd = useRef<() => void>(() => {})
+
+  // Attach audio listeners once.
+  useEffect(() => {
+    const a = audioRef.current
+    if (!a) return
+    const onTime = () => setProgress(a.currentTime)
+    const onEnded = () => handleEnd.current()
+    const onError = () => {
+      if (a.src) setError('Не удалось воспроизвести трек')
+    }
+    a.addEventListener('timeupdate', onTime)
+    a.addEventListener('ended', onEnded)
+    a.addEventListener('error', onError)
+    return () => {
+      a.removeEventListener('timeupdate', onTime)
+      a.removeEventListener('ended', onEnded)
+      a.removeEventListener('error', onError)
+      a.pause()
+    }
+  }, [])
+
+  // Keep the element's volume in sync.
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.volume = prefs.volume
+  }, [prefs.volume])
+
+  // Swap source when the current track changes.
+  useEffect(() => {
+    const a = audioRef.current
+    if (!a) return
+    if (current?.src) {
+      if (a.src !== current.src) {
+        a.src = current.src
+        a.load()
+      }
+    } else {
+      a.removeAttribute('src')
+    }
+    setError(null)
+  }, [current?.src])
+
+  // Drive play/pause for real audio from the `playing` flag.
+  useEffect(() => {
+    const a = audioRef.current
+    if (!a || !current?.src) return
+    if (playing) {
+      a.play().catch(() => setPlaying(false))
+    } else {
+      a.pause()
+    }
+  }, [playing, current?.src])
+
+  // ---- transport ----
   const play = useCallback(() => {
     if (tracks.length) setPlaying(true)
   }, [tracks.length])
@@ -115,7 +220,10 @@ export function usePlaylist(): PlaylistApi {
   const seek = useCallback(
     (sec: number) => {
       if (!current) return
-      setProgress(Math.max(0, Math.min(current.duration, sec)))
+      const clamped = Math.max(0, Math.min(current.duration, sec))
+      setProgress(clamped)
+      const a = audioRef.current
+      if (a && current.src) a.currentTime = clamped
     },
     [current],
   )
@@ -127,19 +235,43 @@ export function usePlaylist(): PlaylistApi {
     [setPrefs],
   )
 
+  const remove = useCallback(
+    (id: string) => {
+      if (!apiEnabled()) return
+      setTracks((list) => {
+        const pos = list.findIndex((t) => t.id === id)
+        if (pos < 0) return list
+        const next = list.filter((t) => t.id !== id)
+        // Keep the index valid relative to the removed item.
+        setIndex((cur) => (pos < cur ? cur - 1 : Math.min(cur, Math.max(0, next.length - 1))))
+        if (next.length === 0) setPlaying(false)
+        return next
+      })
+      apiDeleteTrack(id).catch(() => {
+        setError('Не удалось удалить трек')
+        reload()
+      })
+    },
+    [reload],
+  )
+
   // Конец трека: repeat 'one' — заново, иначе следующий (auto).
-  const handleEnd = useRef<() => void>(() => {})
   handleEnd.current = () => {
     if (prefs.repeat === 'one') {
       setProgress(0)
+      const a = audioRef.current
+      if (a && isRealAudio) {
+        a.currentTime = 0
+        a.play().catch(() => {})
+      }
       return
     }
     advance(1, true)
   }
 
-  // Симуляция воспроизведения: тик прогресса, пока playing.
+  // Симуляция воспроизведения для демо-режима (мок без src).
   useEffect(() => {
-    if (!playing || !current) return
+    if (!playing || !current || isRealAudio) return
     const id = window.setInterval(() => {
       setProgress((p) => {
         const np = p + 0.5
@@ -149,7 +281,7 @@ export function usePlaylist(): PlaylistApi {
       })
     }, 500)
     return () => window.clearInterval(id)
-  }, [playing, current])
+  }, [playing, current, isRealAudio])
 
   return useMemo(
     () => ({
@@ -161,6 +293,9 @@ export function usePlaylist(): PlaylistApi {
       shuffle: prefs.shuffle,
       repeat: prefs.repeat,
       volume: prefs.volume,
+      loading,
+      error,
+      source: useApi ? 'api' : 'mock',
       play,
       pause,
       toggle,
@@ -171,7 +306,9 @@ export function usePlaylist(): PlaylistApi {
       toggleShuffle,
       cycleRepeat,
       select,
+      reload,
+      remove,
     }),
-    [tracks, index, current, playing, progress, prefs, play, pause, toggle, next, prev, seek, setVolume, toggleShuffle, cycleRepeat, select],
+    [tracks, index, current, playing, progress, prefs, loading, error, useApi, play, pause, toggle, next, prev, seek, setVolume, toggleShuffle, cycleRepeat, select, reload, remove],
   )
 }
