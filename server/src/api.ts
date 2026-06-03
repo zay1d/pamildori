@@ -3,7 +3,8 @@
 // track authenticates the caller and authorizes per-user (no IDOR). Streaming
 // uses short-lived signed capability URLs so a plain <audio> element works.
 // ============================================================
-import Fastify, { FastifyRequest } from 'fastify'
+import Fastify from 'fastify'
+import type { FastifyRequest } from 'fastify'
 import cors from '@fastify/cors'
 import fs from 'node:fs'
 import { config } from './config.ts'
