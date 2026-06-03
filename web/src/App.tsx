@@ -14,6 +14,7 @@ import { useSettings } from './hooks/useSettings'
 import { useTasks } from './hooks/useTasks'
 import { useStats } from './hooks/useStats'
 import { usePlaylist } from './hooks/usePlaylist'
+import { useAmbient } from './hooks/useAmbient'
 import { useTheme } from './hooks/useTheme'
 import type { Settings } from './types'
 
@@ -22,6 +23,8 @@ export default function App(): JSX.Element {
   const tasks = useTasks()
   const stats = useStats()
   const player = usePlaylist()
+  // Поднят в App, чтобы фоновые звуки продолжали играть при смене вкладок.
+  const ambient = useAmbient()
   const [tab, setTab] = useState<TabId>('timer')
   const { theme } = useTheme(settings)
 
@@ -43,12 +46,12 @@ export default function App(): JSX.Element {
           settings={settings}
           activeTask={tasks.active}
           onFocusComplete={handleFocusComplete}
-          musicPlaying={player.playing}
+          musicPlaying={player.playing || ambient.anyOn}
         />
       )}
       {tab === 'tasks' && <TasksScreen tasks={tasks} />}
       {tab === 'stats' && <StatsScreen stats={stats} dailyGoal={settings.dailyGoal} />}
-      {tab === 'playlist' && <PlaylistScreen player={player} />}
+      {tab === 'playlist' && <PlaylistScreen player={player} ambient={ambient} />}
       {tab === 'settings' && <SettingsScreen settings={settings} onChange={updateSettings} />}
       <TabBar active={tab} onNav={setTab} />
     </Phone>

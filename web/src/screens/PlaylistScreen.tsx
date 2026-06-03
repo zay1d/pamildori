@@ -3,10 +3,12 @@
 // Транспорт (play/pause/next/prev/shuffle/repeat/volume/прогресс),
 // список треков (с бэкенда через usePlaylist; вне Telegram — демо-мок),
 // удаление трека, подсказка про загрузку через бота, и блок эмбиент-звуков.
+// Эмбиент-звуки играют параллельно с плейлистом (см. useAmbient).
 // ============================================================
-import { useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { PlaylistApi } from '../hooks/usePlaylist'
+import type { AmbientApi } from '../hooks/useAmbient'
+import { AMBIENTS } from '../ambient'
 
 function mmss(sec: number): string {
   const s = Math.max(0, Math.round(sec))
@@ -68,50 +70,36 @@ function VolumeSlider({ value, onChange }: { value: number; onChange: (v: number
   )
 }
 
-// ---- ambient sounds (UI-only mock until audio assets land) ----
-interface Amb {
-  on: boolean
-  vol: number
-}
-const AMBIENTS: Array<[string, string, string]> = [
-  ['rain', 'Rain', '🌧'],
-  ['fire', 'Fireplace', '🔥'],
-  ['cafe', 'Café', '☕'],
-  ['noise', 'White noise', '🌫'],
-]
-
-function AmbientRow({ icon, label, state, onToggle, onVol }: { icon: string; label: string; state: Amb; onToggle: () => void; onVol: (v: number) => void }): JSX.Element {
+// ---- ambient sounds ----
+function AmbientRow({ icon, label, on, vol, onToggle, onVol }: { icon: string; label: string; on: boolean; vol: number; onToggle: () => void; onVol: (v: number) => void }): JSX.Element {
   return (
     <div className="pf" style={{ padding: '7px 10px', display: 'flex', alignItems: 'center', gap: 10 }}>
       <button
         onClick={onToggle}
-        className={state.on ? 'pf-brass' : 'pf-inset'}
-        aria-pressed={state.on}
+        className={on ? 'pf-brass' : 'pf-inset'}
+        aria-pressed={on}
         style={{ width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flex: '0 0 auto' }}
       >
         {icon}
       </button>
-      <span className="font-ui" style={{ fontSize: 14, color: state.on ? 'var(--ink)' : 'var(--ink-faint)', width: 92, flex: '0 0 auto' }}>
+      <span className="font-ui" style={{ fontSize: 14, color: on ? 'var(--ink)' : 'var(--ink-faint)', width: 92, flex: '0 0 auto' }}>
         {label}
       </span>
       <input
         type="range"
         min={0}
         max={100}
-        value={Math.round(state.vol * 100)}
+        value={Math.round(vol * 100)}
         onChange={(e) => onVol(Number(e.target.value) / 100)}
-        disabled={!state.on}
+        disabled={!on}
         aria-label={`${label} volume`}
-        style={{ flex: 1, accentColor: 'var(--brass)', height: 18, opacity: state.on ? 1 : 0.4 }}
+        style={{ flex: 1, accentColor: 'var(--brass)', height: 18, opacity: on ? 1 : 0.4 }}
       />
     </div>
   )
 }
 
-export function PlaylistScreen({ player }: { player: PlaylistApi }): JSX.Element {
-  const [amb, setAmb] = useState<Record<string, Amb>>(() =>
-    Object.fromEntries(AMBIENTS.map(([k]) => [k, { on: false, vol: 0.5 }])),
-  )
+export function PlaylistScreen({ player, ambient }: { player: PlaylistApi; ambient: AmbientApi }): JSX.Element {
   const cur = player.current
   const dur = cur?.duration ?? 0
   const repeatIcon = player.repeat === 'one' ? '🔂' : '🔁'
@@ -249,18 +237,22 @@ export function PlaylistScreen({ player }: { player: PlaylistApi }): JSX.Element
         {/* ambient sounds */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div className="font-label" style={{ fontSize: 9, color: 'var(--brass-2)', margin: '4px 2px 0' }}>
-            Ambient sounds
+            Ambient sounds <span style={{ color: 'var(--ink-faint)' }}>· play over your music</span>
           </div>
-          {AMBIENTS.map(([key, label, icon]) => (
-            <AmbientRow
-              key={key}
-              icon={icon}
-              label={label}
-              state={amb[key]}
-              onToggle={() => setAmb((s) => ({ ...s, [key]: { ...s[key], on: !s[key].on } }))}
-              onVol={(v) => setAmb((s) => ({ ...s, [key]: { ...s[key], vol: v } }))}
-            />
-          ))}
+          {AMBIENTS.map((a) => {
+            const st = ambient.states[a.id] ?? { on: false, vol: 0.5 }
+            return (
+              <AmbientRow
+                key={a.id}
+                icon={a.icon}
+                label={a.label}
+                on={st.on}
+                vol={st.vol}
+                onToggle={() => ambient.toggle(a.id)}
+                onVol={(v) => ambient.setVol(a.id, v)}
+              />
+            )
+          })}
         </div>
       </div>
     </div>
