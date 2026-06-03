@@ -1,0 +1,27 @@
+{
+  "name": "pamildori-server",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Pamildori playlist backend — Telegram bot (long polling) + HTTP API",
+  "scripts": {
+    "start": "node --experimental-strip-types src/server.ts",
+    "dev": "node --experimental-strip-types --watch src/server.ts",
+    "test": "node --experimental-strip-types --test test/*.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.0.1",
+    "better-sqlite3": "^11.8.1",
+    "fastify": "^5.2.0",
+    "grammy": "^1.30.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

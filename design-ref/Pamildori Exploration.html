@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pamildori — Exploration</title>
+<link rel="stylesheet" href="pamildori.css" />
+<style>
+  html, body { margin: 0; height: 100%; background: #2b2620; }
+  .pm-flame { will-change: transform; }
+  /* study card */
+  .study {
+    width: 100%; height: 100%;
+    background: var(--bg); color: var(--ink);
+    display: flex; flex-direction: column;
+  }
+  .study-head {
+    padding: 16px 20px 0;
+  }
+  .study-grid {
+    flex: 1; display: grid; gap: 10px; padding: 14px 18px 18px;
+  }
+  .mini {
+    border: 1px solid var(--line); border-radius: 16px;
+    background: linear-gradient(var(--panel), var(--panel-2));
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+    padding: 10px 6px 12px; position: relative; overflow: hidden;
+  }
+  .mini .cap {
+    font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--ink-faint); margin-top: 8px; font-weight: 600;
+  }
+  .winmini {
+    border-radius: 14px; overflow: hidden; position: relative;
+    border: 1px solid var(--line);
+  }
+  .winmini .cap {
+    position: absolute; left: 0; right: 0; bottom: 0; text-align: center;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--ink); padding: 5px; font-weight: 600;
+    background: linear-gradient(transparent, rgba(0,0,0,0.55));
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="robot.jsx"></script>
+<script type="text/babel" src="window-scene.jsx"></script>
+<script type="text/babel" src="ui.jsx"></script>
+<script type="text/babel" src="timer-screen.jsx"></script>
+
+<script type="text/babel">
+const { DesignCanvas, DCSection, DCArtboard, DCPostIt, Robot, WindowScene, TimerScreen } = window;
+
+function MiniRobot({ label, state = 'idle', costumes = [] }) {
+  return (
+    <div className="mini">
+      <div style={{ flex: 1, display: 'grid', placeItems: 'center', width: '100%' }}>
+        <Robot size={104} state={state} costumes={costumes} />
+      </div>
+      <div className="cap">{label}</div>
+    </div>
+  );
+}
+
+function WinMini({ timeofday, weather, label }) {
+  return (
+    <div className="winmini" style={{ height: 150 }}>
+      <WindowScene timeofday={timeofday} weather={weather} arched={false} style={{ position: 'absolute', inset: 0, padding: 7, borderRadius: 0 }} />
+      <div className="cap">{label}</div>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <DesignCanvas>
+      <DCSection id="hero" title="The Timer · two times of day" subtitle="Same screen, theme-swapped — the hero of the app">
+        <DCArtboard id="night" label="A · Night — cloudy, nightcap" width={430} height={884}>
+          <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', background: '#1a1510' }}>
+            <TimerScreen theme="night" timeofday="night" weather="cloudy" robotState="idle" costumes={['nightcap']}
+              time="25:00" mode="focus" done={2} total={4} task="Reading — Cicero, De Officiis" />
+          </div>
+        </DCArtboard>
+        <DCArtboard id="day" label="B · Day — clear, focused" width={430} height={884}>
+          <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', background: '#bda886' }}>
+            <TimerScreen theme="day" timeofday="day" weather="clear" robotState="focus" costumes={[]}
+              time="18:42" mode="focus" done={1} total={4} task="Essay draft — Roman law" />
+          </div>
+        </DCArtboard>
+        <DCArtboard id="night-music" label="C · Night — rain, music on" width={430} height={884}>
+          <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', background: '#1a1510' }}>
+            <TimerScreen theme="night" timeofday="dusk" weather="rain" robotState="break" costumes={['nightcap','headphones']}
+              time="04:30" mode="short" done={3} total={4} task="Tea & a short rest" />
+          </div>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="robot-states" title="The Robot · moods" subtitle="Face changes by session state (CSS-animated stubs)">
+        <DCArtboard id="states" label="States" width={560} height={300}>
+          <div className="study theme-night">
+            <div className="study-grid" style={{ gridTemplateColumns: 'repeat(5,1fr)' }}>
+              <MiniRobot label="Idle" state="idle" />
+              <MiniRobot label="Focus" state="focus" />
+              <MiniRobot label="Break" state="break" />
+              <MiniRobot label="Complete" state="complete" />
+              <MiniRobot label="Dozing" state="dozing" />
+            </div>
+          </div>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="robot-costumes" title="The Robot · costumes stack" subtitle="Each costume is a separate layer — night + music = both at once">
+        <DCArtboard id="costumes" label="Layered costumes" width={460} height={300}>
+          <div className="study theme-night">
+            <div className="study-grid" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
+              <MiniRobot label="Base" state="idle" />
+              <MiniRobot label="+ Nightcap" state="idle" costumes={['nightcap']} />
+              <MiniRobot label="+ Headphones" state="break" costumes={['headphones']} />
+              <MiniRobot label="Both" state="idle" costumes={['nightcap','headphones']} />
+            </div>
+          </div>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="window" title="The Window · sky × weather" subtitle="Procedural layers — any time of day mixes with any weather, not 20 static images">
+        <DCArtboard id="timeofday" label="Time of day (clear)" width={800} height={236}>
+          <div className="study theme-night">
+            <div className="study-grid" style={{ gridTemplateColumns: 'repeat(5,1fr)' }}>
+              <WinMini timeofday="night" weather="clear" label="Night" />
+              <WinMini timeofday="twilight" weather="clear" label="Twilight" />
+              <WinMini timeofday="dawn" weather="clear" label="Dawn" />
+              <WinMini timeofday="day" weather="clear" label="Day" />
+              <WinMini timeofday="dusk" weather="clear" label="Dusk" />
+            </div>
+          </div>
+        </DCArtboard>
+        <DCArtboard id="weather" label="Weather (over day & night)" width={660} height={236}>
+          <div className="study theme-night">
+            <div className="study-grid" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
+              <WinMini timeofday="day" weather="clear" label="Clear" />
+              <WinMini timeofday="day" weather="cloudy" label="Cloudy" />
+              <WinMini timeofday="dusk" weather="rain" label="Rain" />
+              <WinMini timeofday="night" weather="storm" label="Storm" />
+            </div>
+          </div>
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

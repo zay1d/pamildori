@@ -1,0 +1,23 @@
+# Pamildori backend — runs ONLY the app (API + Telegram bot) in Docker.
+# The app listens on 127.0.0.1:8090; a reverse proxy on the host (nginx) owns
+# ports 80/443, terminates TLS, and proxies api.pamildori.uz to it. No Caddy:
+# on a shared VPS nginx already owns 80/443, and 8080 is taken by another app.
+#
+#   docker compose up -d --build
+#   docker compose logs -f app        # bot @<name> polling, API on 0.0.0.0:8080
+#
+# TLS + vhost setup: see deploy/pamildori.nginx.conf and README "Deploy".
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - HOST=0.0.0.0
+      - DATA_DIR=/app/data
+    volumes:
+      - ./data:/app/data
+    # Bind to loopback only — the app is never publicly exposed; nginx fronts it.
+    # If 8090 is taken, change the host port here AND proxy_pass in the nginx conf.
+    ports:
+      - "127.0.0.1:8090:8080"
