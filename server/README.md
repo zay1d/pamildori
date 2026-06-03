@@ -34,7 +34,31 @@ automatically. **Grey cloud is required** — an orange (proxied) record blocks
 Caddy's HTTP-01 challenge. (Fallback with no DNS at all: use `sslip.io`, e.g.
 `203-0-113-7.sslip.io` for IP `203.0.113.7`.)
 
-## Deploy (Docker Compose)
+## Deploy A — shared VPS that already runs nginx (this project's setup)
+The VPS already serves other sites through nginx (it owns ports 80/443), and
+port 8080 is taken by another app. So **don't** run Caddy here — run only the
+app on a local port and add a vhost to the existing nginx.
+
+```bash
+cd pamildori/server
+cp .env.example .env          # set BOT_TOKEN (PUBLIC_HOST=api.pamildori.uz already)
+docker compose -f docker-compose.nginx.yml up -d --build
+ss -ltnp | grep 8090          # app should be listening on 127.0.0.1:8090
+curl http://127.0.0.1:8090/api/health   # → {"ok":true}
+```
+Add the nginx site + TLS:
+```bash
+sudo cp deploy/pamildori.nginx.conf /etc/nginx/sites-available/api.pamildori.uz
+sudo ln -s /etc/nginx/sites-available/api.pamildori.uz /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d api.pamildori.uz      # issues + wires the TLS cert
+```
+Verify: `curl https://api.pamildori.uz/api/health` → `{"ok":true}`.
+> If 8090 is also taken, change both the host port in `docker-compose.nginx.yml`
+> and `proxy_pass` in the nginx conf to a free port.
+
+## Deploy B — dedicated VPS (Caddy + own domain or sslip.io)
+Use this only when nothing else owns 80/443.
 ```bash
 cd server
 cp .env.example .env

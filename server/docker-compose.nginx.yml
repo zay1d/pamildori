@@ -1,0 +1,21 @@
+# Deploy variant for a VPS that ALREADY runs nginx (shared box).
+# Only the app runs in Docker; it listens on localhost:8090 and the existing
+# nginx terminates TLS and reverse-proxies api.pamildori.uz to it.
+# No Caddy, no ports 80/443 here — nginx keeps owning them.
+#
+#   docker compose -f docker-compose.nginx.yml up -d --build
+#
+# Host port 8090 is used because lokatsiya-bot already occupies 8080.
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - HOST=0.0.0.0
+      - DATA_DIR=/app/data
+    volumes:
+      - ./data:/app/data
+    # Bind to loopback only — the app is never publicly exposed; nginx fronts it.
+    ports:
+      - "127.0.0.1:8090:8080"
