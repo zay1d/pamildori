@@ -605,23 +605,50 @@ function drawCurtain(c: CanvasRenderingContext2D, x: number, y: number, w: numbe
 
 function drawDrapedSill(c: CanvasRenderingContext2D, g: Geom, C: Palette, W: number, H: number): void {
   const y0 = g.oyBot + Math.round(H * 0.02)
-  // wooden plank floor: dark base + vertical boards with seams, grain & lit edges
-  P(c, 0, y0, W, H - y0, S(C, 'woodD'))
-  const plank = Math.max(6, Math.round(W * 0.08))
-  for (let x = 0; x < W; x += plank) {
-    const s = rnd(x * 1.7)
-    const face = s > 0.66 ? S(C, 'woodL') : s > 0.33 ? S(C, 'wood') : S(C, 'woodD')
-    P(c, x, y0, plank - 1, H - y0, face) // board face
-    P(c, x + plank - 1, y0, 1, H - y0, S(C, 'woodXD')) // dark seam between boards
-    P(c, x, y0, 1, H - y0, S(C, 'woodHi')) // lit left edge
-    // a faint grain streak down the board
-    const gx = x + 1 + Math.round(rnd(x + 3) * (plank - 3))
-    P(c, gx, y0 + 2, 1, H - y0 - 3, S(C, 'woodXD'))
+  // ---- perspective parquet floor ----
+  // Ground plane in 1/depth perspective: rows bunch toward the back, columns
+  // converge to a central vanishing point. Tiles carry alternating grain
+  // (basketweave parquet). Drawn per row in colour-runs (this layer is cached).
+  const F = H - y0
+  const yH = y0 - F * 0.55 // horizon, above the floor's back edge
+  const vx = W / 2
+  const SU = (8 * F) / W // lateral tile scale (~5–6 blocks across the front)
+  const SV = 4.6 * F // depth tile scale (~6–7 rows front→back)
+  const seam = 0.09
+  for (let y = y0; y < H; y++) {
+    const dy = y - yH
+    const v = SV / dy
+    const iv = Math.floor(v)
+    const vf = v - iv
+    let runStart = 0
+    let runCol = ''
+    for (let x = 0; x <= W; x++) {
+      let col = ''
+      if (x < W) {
+        const u = ((x - vx) * SU) / dy
+        const iu = Math.floor(u)
+        const uf = u - iu
+        const even = ((iu + iv) & 1) === 0
+        // parquet block: grain runs across one way on A-blocks, the other on B
+        let base = even ? S(C, 'woodL') : S(C, 'wood')
+        const stripe = (even ? Math.floor(uf * 4) : Math.floor(vf * 4)) & 1
+        if (stripe) base = even ? S(C, 'wood') : S(C, 'woodD')
+        // lit leading edge of each block (top + left) for a bevelled parquet look
+        if (vf < seam * 1.4) base = even ? S(C, 'woodHi') : S(C, 'woodL')
+        // grout seams — perspective-correct (thinner toward the back)
+        if (uf < seam || vf < seam * 0.6) base = S(C, 'woodXD')
+        col = base
+      }
+      if (col !== runCol) {
+        if (runCol && x > runStart) P(c, runStart, y, x - runStart, 1, runCol)
+        runCol = col
+        runStart = x
+      }
+    }
   }
-  // front nosing where the floor meets the room (lit rim for depth)
-  P(c, 0, y0 - 3, W, 3, S(C, 'woodL'))
-  P(c, 0, y0 - 3, W, 1, S(C, 'woodHi'))
-  ditherWash(c, 0, y0, W, H, '#0a0603', 0.16)
+  // shadow seam where the back wall meets the floor
+  P(c, 0, y0, W, 1, S(C, 'woodXD'))
+  ditherWash(c, 0, y0, W, H, '#0a0603', 0.05)
 
   // carved stone window sill with depth, sitting on the reveal under the glass
   const sx0 = g.ox0 - Math.round(W * 0.04), sx1 = g.ox1 + Math.round(W * 0.04)
