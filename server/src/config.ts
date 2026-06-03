@@ -22,7 +22,7 @@ const botToken = req('BOT_TOKEN')
 export const config = {
   botToken,
   port: int('PORT', 8080),
-  // Behind Caddy → bind localhost by default; set HOST=0.0.0.0 in containers.
+  // Behind nginx → bind localhost by default; set HOST=0.0.0.0 in containers.
   host: process.env.HOST || '127.0.0.1',
   dataDir: process.env.DATA_DIR || './data',
   publicBaseUrl: req('PUBLIC_BASE_URL').replace(/\/+$/, ''),
