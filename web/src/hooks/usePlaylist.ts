@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePersistedState } from './usePersistedState'
 import { STORAGE_KEYS } from '../storage/storage'
+import { setVolume as setAudioVolume, resumeAudio } from '../audio/volume'
 import { apiEnabled, fetchTracks, deleteTrack as apiDeleteTrack, type ApiTrack } from '../api'
 
 // ============================================================
@@ -118,6 +119,8 @@ export function usePlaylist(): PlaylistApi {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   if (audioRef.current === null && typeof Audio !== 'undefined') {
     audioRef.current = new Audio()
+    // Нужно для Web Audio над кросс-доменным аудио (стрим с api.pamildori.uz).
+    audioRef.current.crossOrigin = 'anonymous'
   }
 
   // End-of-track handler kept in a ref so listeners always see fresh prefs.
@@ -143,9 +146,10 @@ export function usePlaylist(): PlaylistApi {
     }
   }, [])
 
-  // Keep the element's volume in sync.
+  // Keep the element's volume in sync — via Web Audio gain so it works on iOS
+  // and stays independent of the phone's hardware volume.
   useEffect(() => {
-    if (audioRef.current) audioRef.current.volume = prefs.volume
+    if (audioRef.current) setAudioVolume(audioRef.current, prefs.volume)
   }, [prefs.volume])
 
   // Swap source when the current track changes.
@@ -175,13 +179,19 @@ export function usePlaylist(): PlaylistApi {
   }, [playing, current?.src])
 
   // ---- transport ----
+  // resumeAudio() здесь — это юзер-жест, на iOS он разблокирует Web Audio.
   const play = useCallback(() => {
+    resumeAudio()
     if (tracks.length) setPlaying(true)
   }, [tracks.length])
   const pause = useCallback(() => setPlaying(false), [])
-  const toggle = useCallback(() => setPlaying((p) => (tracks.length ? !p : false)), [tracks.length])
+  const toggle = useCallback(() => {
+    resumeAudio()
+    setPlaying((p) => (tracks.length ? !p : false))
+  }, [tracks.length])
 
   const select = useCallback((i: number) => {
+    resumeAudio()
     setIndex(i)
     setProgress(0)
     setPlaying(true)

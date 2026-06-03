@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { usePersistedState } from './usePersistedState'
 import { STORAGE_KEYS } from '../storage/storage'
+import { setVolume as setAudioVolume, resumeAudio } from '../audio/volume'
 import { AMBIENTS, ambientUrl } from '../ambient'
 
 // ============================================================
@@ -53,8 +54,9 @@ export function useAmbient(): AmbientApi {
         elements.current[def.id] = el
       }
       if (!el) continue
-      // Громкость держим в синхроне всегда — слайдер меняет звук вживую.
-      el.volume = st.vol
+      // Громкость через Web Audio gain — работает на iOS и независимо от
+      // системной громкости; держим в синхроне всегда (слайдер меняет вживую).
+      setAudioVolume(el, st.vol)
       if (st.on) {
         // play() инициируется после клика (юзер-жест) → автоплей разрешён.
         if (el.paused) void el.play().catch(() => {})
@@ -73,11 +75,13 @@ export function useAmbient(): AmbientApi {
   }, [])
 
   const toggle = useCallback(
-    (id: string) =>
+    (id: string) => {
+      resumeAudio() // юзер-жест → разблокировать Web Audio на iOS
       setStored((s) => {
         const cur = s[id] ?? { on: false, vol: 0.5 }
         return { ...s, [id]: { ...cur, on: !cur.on } }
-      }),
+      })
+    },
     [setStored],
   )
 
