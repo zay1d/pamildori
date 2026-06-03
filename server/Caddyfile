@@ -1,0 +1,8 @@
+# Caddy auto-provisions a Let's Encrypt certificate for this host.
+# PUBLIC_HOST comes from .env, e.g. 203-0-113-7.sslip.io (resolves to your IP),
+# so no registrar DNS configuration is required.
+{$PUBLIC_HOST} {
+	encode zstd gzip
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	reverse_proxy app:8080
+}
