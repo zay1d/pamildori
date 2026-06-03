@@ -69,12 +69,10 @@ body {
   background: #0c0a10;
 }
 
-/* center the phone frame on the plain web */
+/* App fills the whole viewport (Mini App / fullscreen) — no device frame. */
 #root {
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  min-height: 100dvh;
 }
 
 /* crisp-edge images & canvases */

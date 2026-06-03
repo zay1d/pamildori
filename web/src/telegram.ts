@@ -4,6 +4,10 @@
 interface TelegramWebApp {
   ready: () => void
   expand: () => void
+  /** Bot API 8.0+: настоящий полноэкранный режим на мобильных. */
+  requestFullscreen?: () => void
+  /** Bot API 7.7+: отключить вертикальные свайпы (чтобы скролл не закрывал апп). */
+  disableVerticalSwipes?: () => void
   colorScheme: 'light' | 'dark'
   themeParams: Record<string, string>
   initData: string
@@ -33,11 +37,23 @@ export const tg: TelegramWebApp | undefined =
 
 export const isTelegram = (): boolean => Boolean(tg && tg.initData !== undefined)
 
-/** Инициализация Mini App: сообщаем готовность и разворачиваем на весь экран. */
+/** Инициализация Mini App: готовность + разворот на весь экран. */
 export function initTelegram(): void {
   if (!tg) return
   tg.ready()
-  tg.expand()
+  tg.expand() // полная высота (убирает «половинное» открытие)
+  // Настоящий fullscreen — только если клиент поддерживает (Bot API 8.0+).
+  try {
+    tg.requestFullscreen?.()
+  } catch {
+    /* старый клиент — остаёмся на expand() */
+  }
+  // Чтобы вертикальный скролл по контенту не закрывал апп случайно.
+  try {
+    tg.disableVerticalSwipes?.()
+  } catch {
+    /* метод недоступен — игнорируем */
+  }
 }
 
 /** Лёгкая тактильная отдача (если доступна) — приятно на телефоне. */

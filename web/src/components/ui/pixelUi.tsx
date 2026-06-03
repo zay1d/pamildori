@@ -47,14 +47,14 @@ export function Phone({
   theme = 'night',
   children,
   style = {},
-  width = 390,
-  height = 844,
+  width = '100%',
+  height = '100dvh',
 }: {
   theme?: 'night' | 'day'
   children: ReactNode
   style?: CSSProperties
-  width?: number
-  height?: number
+  width?: number | string
+  height?: number | string
 }): JSX.Element {
   return (
     <div
@@ -66,9 +66,6 @@ export function Phone({
         overflow: 'hidden',
         background: 'var(--bg)',
         color: 'var(--ink)',
-        borderRadius: 26,
-        border: '3px solid #0c0a10',
-        boxShadow: '0 24px 70px rgba(0,0,0,0.6), inset 0 0 0 2px var(--line)',
         fontFamily: "'Pixelify Sans', monospace",
         display: 'flex',
         flexDirection: 'column',
@@ -97,7 +94,7 @@ function useClock(): string {
 export function StatusBar({ title = 'PAMILDORI' }: { title?: string }): JSX.Element {
   const clock = useClock()
   return (
-    <div style={{ flex: '0 0 auto', paddingTop: 12 }}>
+    <div style={{ flex: '0 0 auto', paddingTop: 'calc(12px + env(safe-area-inset-top, 0px))' }}>
       <div style={{ width: 44, height: 5, background: 'var(--line-2)', margin: '0 auto 8px' }} />
       <div
         style={{
@@ -133,7 +130,7 @@ export function TabBar({ active = 'timer', onNav }: { active?: TabId; onNav?: (i
         display: 'grid',
         gridTemplateColumns: 'repeat(5,1fr)',
         gap: 2,
-        padding: '8px 8px 20px',
+        padding: '8px 8px calc(8px + env(safe-area-inset-bottom, 12px))',
         background: 'linear-gradient(var(--panel-2), var(--panel))',
         borderTop: '3px solid var(--line-2)',
         boxShadow: 'inset 0 2px 0 rgba(255,255,255,0.05)',
