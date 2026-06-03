@@ -47,16 +47,18 @@ export function useAmbient(): AmbientApi {
     for (const def of AMBIENTS) {
       const st = states[def.id] ?? { on: false, vol: 0.5 }
       let el = elements.current[def.id]
+      if (st.on && !el) {
+        el = new Audio(ambientUrl(def.file))
+        el.loop = true
+        elements.current[def.id] = el
+      }
+      if (!el) continue
+      // Громкость держим в синхроне всегда — слайдер меняет звук вживую.
+      el.volume = st.vol
       if (st.on) {
-        if (!el) {
-          el = new Audio(ambientUrl(def.file))
-          el.loop = true
-          elements.current[def.id] = el
-        }
-        el.volume = st.vol
         // play() инициируется после клика (юзер-жест) → автоплей разрешён.
         if (el.paused) void el.play().catch(() => {})
-      } else if (el) {
+      } else {
         el.pause()
       }
     }

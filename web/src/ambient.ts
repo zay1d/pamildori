@@ -22,9 +22,6 @@ export interface AmbientDef {
 export const AMBIENTS: AmbientDef[] = [
   { id: 'rain', label: 'Rain', icon: '🌧', file: 'rain.mp3' },
   { id: 'fire', label: 'Fireplace', icon: '🔥', file: 'fireplace.mp3' },
-  { id: 'forest', label: 'Forest', icon: '🌲', file: 'forest.mp3' },
-  { id: 'waves', label: 'Waves', icon: '🌊', file: 'waves.mp3' },
-  { id: 'cafe', label: 'Café', icon: '☕', file: 'cafe.mp3' },
   { id: 'noise', label: 'White noise', icon: '🌫', file: 'noise.mp3' },
 ]
 

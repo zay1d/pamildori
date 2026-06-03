@@ -7,9 +7,6 @@ below (see `web/src/ambient.ts` — the `file` field of each entry):
 |-----------------|--------------|
 | `rain.mp3`      | Rain 🌧       |
 | `fireplace.mp3` | Fireplace 🔥 |
-| `forest.mp3`    | Forest 🌲    |
-| `waves.mp3`     | Waves 🌊     |
-| `cafe.mp3`      | Café ☕      |
 | `noise.mp3`     | White noise 🌫 |
 
 ## Requirements

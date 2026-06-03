@@ -91,9 +91,8 @@ function AmbientRow({ icon, label, on, vol, onToggle, onVol }: { icon: string; l
         max={100}
         value={Math.round(vol * 100)}
         onChange={(e) => onVol(Number(e.target.value) / 100)}
-        disabled={!on}
         aria-label={`${label} volume`}
-        style={{ flex: 1, accentColor: 'var(--brass)', height: 18, opacity: on ? 1 : 0.4 }}
+        style={{ flex: 1, accentColor: 'var(--brass)', height: 18, opacity: on ? 1 : 0.6 }}
       />
     </div>
   )
