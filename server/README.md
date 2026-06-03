@@ -12,25 +12,27 @@ Stores each user's audio on the VPS and serves it to the Mini App.
 
 ## Why this shape
 Single VPS, personal playlists → disk + SQLite is the right size (no DB server,
-no object store to operate). Long polling sidesteps the "no registrar DNS"
-constraint for the bot; the API still needs HTTPS (the Mini App is served over
-HTTPS and can't call plain HTTP), which we get from **Caddy + sslip.io** without
-touching DNS.
+no object store to operate). Long polling sidesteps the webhook/DNS requirement
+for the bot; the API still needs HTTPS (the Mini App is served over HTTPS and
+can't call plain HTTP), which **Caddy** provides via Let's Encrypt for the
+domain `api.pamildori.uz`.
 
 ## Prerequisites
 - A VPS with Docker + Docker Compose, ports **80** and **443** open.
-- Its **public IP** (e.g. `203.0.113.7`).
+- Its **public IP**.
 - A Telegram **bot token** from [@BotFather](https://t.me/BotFather).
 
-## sslip.io hostname (no DNS setup)
-`sslip.io` resolves `a-b-c-d.sslip.io` → `a.b.c.d`. Convert your IP by replacing
-dots with dashes:
+## DNS (Cloudflare)
+The domain `pamildori.uz` is on Cloudflare. Add one record for the backend:
 
-```
-203.0.113.7  →  203-0-113-7.sslip.io
-```
+| Type | Name | Content   | Proxy        |
+|------|------|-----------|--------------|
+| A    | api  | <VPS IP>  | **DNS only** (grey cloud) |
 
-That hostname gets a real Let's Encrypt cert from Caddy automatically.
+→ `api.pamildori.uz` resolves to the VPS, and Caddy issues the TLS cert
+automatically. **Grey cloud is required** — an orange (proxied) record blocks
+Caddy's HTTP-01 challenge. (Fallback with no DNS at all: use `sslip.io`, e.g.
+`203-0-113-7.sslip.io` for IP `203.0.113.7`.)
 
 ## Deploy (Docker Compose)
 ```bash
