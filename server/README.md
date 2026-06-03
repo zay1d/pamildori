@@ -104,7 +104,10 @@ from `GET /api/tracks` directly as the `<audio>` source. Set the API base URL
   check), per-user track cap, small JSON body limit.
 - **Secrets** only via env; CORS restricted to the Mini App origin; the bot token
   is never logged; request logging is disabled so stream tokens don't reach logs.
-- Runs as a **non-root** user in Docker; Caddy adds **HSTS** and auto-HTTPS.
+- The app process runs as a **non-root** user in Docker: the entrypoint starts
+  as root only to fix the bind-mounted data-dir ownership, then drops to `node`
+  via `gosu` (so no manual `chown` is needed on a fresh deploy). HSTS/HTTPS are
+  terminated by the reverse proxy in front.
 
 ## Security review — applied & accepted
 Audited with the secure-coding-trio (no critical/high fail-open found). Applied:
