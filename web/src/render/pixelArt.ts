@@ -605,17 +605,23 @@ function drawCurtain(c: CanvasRenderingContext2D, x: number, y: number, w: numbe
 
 function drawDrapedSill(c: CanvasRenderingContext2D, g: Geom, C: Palette, W: number, H: number): void {
   const y0 = g.oyBot + Math.round(H * 0.02)
-  P(c, 0, y0, W, H - y0, S(C, 'redD'))
-  // folds via vertical bands of tone
-  for (let x = 0; x < W; x += Math.round(W * 0.06)) {
-    const s = rnd(x)
-    P(c, x, y0, Math.round(W * 0.03), H - y0, s > 0.5 ? S(C, 'red') : S(C, 'redXD'))
-    P(c, x + Math.round(W * 0.03), y0, 2, H - y0, S(C, 'redHi'))
+  // wooden plank floor: dark base + vertical boards with seams, grain & lit edges
+  P(c, 0, y0, W, H - y0, S(C, 'woodD'))
+  const plank = Math.max(6, Math.round(W * 0.08))
+  for (let x = 0; x < W; x += plank) {
+    const s = rnd(x * 1.7)
+    const face = s > 0.66 ? S(C, 'woodL') : s > 0.33 ? S(C, 'wood') : S(C, 'woodD')
+    P(c, x, y0, plank - 1, H - y0, face) // board face
+    P(c, x + plank - 1, y0, 1, H - y0, S(C, 'woodXD')) // dark seam between boards
+    P(c, x, y0, 1, H - y0, S(C, 'woodHi')) // lit left edge
+    // a faint grain streak down the board
+    const gx = x + 1 + Math.round(rnd(x + 3) * (plank - 3))
+    P(c, gx, y0 + 2, 1, H - y0 - 3, S(C, 'woodXD'))
   }
-  // crest of the bed near the window (rolled edge)
-  P(c, g.ox0 - Math.round(W * 0.06), y0 - 3, g.ox1 - g.ox0 + Math.round(W * 0.12), 6, S(C, 'redL'))
-  P(c, g.ox0 - Math.round(W * 0.06), y0 - 3, g.ox1 - g.ox0 + Math.round(W * 0.12), 2, S(C, 'redRim'))
-  ditherWash(c, 0, y0, W, H, '#1a0608', 0.18)
+  // front nosing where the floor meets the room (lit rim for depth)
+  P(c, 0, y0 - 3, W, 3, S(C, 'woodL'))
+  P(c, 0, y0 - 3, W, 1, S(C, 'woodHi'))
+  ditherWash(c, 0, y0, W, H, '#0a0603', 0.16)
 
   // carved stone window sill with depth, sitting on the reveal under the glass
   const sx0 = g.ox0 - Math.round(W * 0.04), sx1 = g.ox1 + Math.round(W * 0.04)

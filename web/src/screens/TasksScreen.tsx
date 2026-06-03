@@ -4,12 +4,20 @@
 // переименование, удаление. Активная задача питает чип над таймером.
 // ============================================================
 import { useState } from 'react'
+import type { ChangeEvent } from 'react'
 import type { CSSProperties } from 'react'
 import type { TasksApi } from '../hooks/useTasks'
 import type { Task } from '../types'
 
 const EST_MAX = 20
 const PIP_CAP = 8 // сколько помидоров рисуем «глазами», прежде чем перейти к счётчику
+
+/** Подогнать высоту textarea под содержимое, чтобы был виден весь текст. */
+function autoGrow(el: HTMLTextAreaElement | null): void {
+  if (!el) return
+  el.style.height = 'auto'
+  el.style.height = `${el.scrollHeight}px`
+}
 
 /** Ряд помидоров: done закрашены, остальные приглушены; при большом плане — счётчик. */
 function Pips({ done, estimate }: { done: number; estimate: number }): JSX.Element {
@@ -89,7 +97,7 @@ function AddForm({ onAdd }: { onAdd: (title: string, estimate: number) => void }
         style={{
           padding: '8px 10px',
           fontFamily: "'DotGothic16', monospace",
-          fontSize: 15,
+          fontSize: 14,
           color: 'var(--ink)',
           background: 'var(--bg)',
           border: '2px solid var(--bg-2)',
@@ -190,29 +198,41 @@ function TaskRow({
       {/* title + pips */}
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
         {editing ? (
-          <input
+          <textarea
             autoFocus
+            ref={autoGrow}
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
+              setDraft(e.target.value)
+              autoGrow(e.target)
+            }}
             onBlur={commit}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') commit()
+              // Enter — сохранить (перенос строки не нужен), Shift+Enter — перенос.
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                commit()
+              }
               if (e.key === 'Escape') {
                 setEditing(false)
                 setDraft(task.title)
               }
             }}
             maxLength={120}
+            rows={1}
             className="pf-inset"
             style={{
               padding: '4px 6px',
               fontFamily: "'DotGothic16', monospace",
               fontSize: 14,
+              lineHeight: 1.35,
               color: 'var(--ink)',
               background: 'var(--bg)',
               border: '2px solid var(--bg-2)',
               outline: 'none',
               width: '100%',
+              resize: 'none',
+              overflow: 'hidden',
             }}
           />
         ) : (
@@ -229,12 +249,12 @@ function TaskRow({
               padding: 0,
               textAlign: 'left',
               cursor: 'text',
-              fontSize: 15,
+              fontSize: 14,
+              lineHeight: 1.35,
               color: 'var(--ink)',
               textDecoration: task.completed ? 'line-through' : 'none',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
+              whiteSpace: 'normal',
+              overflowWrap: 'anywhere',
             }}
           >
             {task.title}
