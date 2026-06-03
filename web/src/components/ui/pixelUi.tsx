@@ -264,14 +264,14 @@ export function Preset({
             style={{
               flex: 1,
               padding: '7px 0',
-              fontFamily: "'Pixelify Sans', monospace",
-              fontSize: 15,
-              fontWeight: 600,
+              fontFamily: "'VT323', monospace",
+              fontSize: 22,
+              lineHeight: 1,
               color: on ? 'var(--brass-2)' : 'var(--ink-soft)',
             }}
           >
             {p}
-            <span style={{ fontSize: 10, opacity: 0.7 }}>m</span>
+            <span style={{ fontSize: 15, opacity: 0.7 }}>m</span>
           </button>
         )
       })}
